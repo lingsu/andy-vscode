@@ -17,7 +17,46 @@
         "command": "andy-vscode.helloWorld",
         "title": "Hello World"
       }
-    ]
+    ],
+    "submenus": [
+			{
+				"id": "andy/editor/context",
+				"label": "快速生成"
+			},
+			{
+				"id": "andy/explorer/context",
+				"label": "快速生成"
+			}
+		],
+    "menus": {
+      "editor/context": [
+				{
+					"submenu": "andy/editor/context",
+					"group": "1_andy@1"
+				}
+			],
+			"explorer/context": [
+				{
+					"submenu": "andy/explorer/context",
+					"group": "2_andy@1",
+					"when": "explorerResourceIsFolder"
+				}
+			],
+      "andy/editor/context": [
+				{
+					"command": "andy-vscode.helloWorld",
+					"group": "andy@1"
+				}
+				
+			],
+			"andy/explorer/context": [
+				{
+					"command": "andy-vscode.helloWorld",
+					"group": "andy@1"
+				}
+				
+			]
+    }
   },
   "scripts": {
     "vscode:prepublish": "pnpm run package",
