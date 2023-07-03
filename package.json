@@ -87,6 +87,7 @@
 	},
 	"dependencies": {
 		"copy-paste": "^1.5.3",
+		"directory-tree": "^3.5.1",
 		"fs-extra": "^11.1.1"
 	}
 }
