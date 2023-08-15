@@ -4,6 +4,7 @@ import * as vscode from "vscode";
 import * as copyPaste from "copy-paste";
 import * as path from "path";
 import * as fs from "fs-extra";
+import reactrouter from "./commands/reactrouter";
 
 export const rootPath = path.join(
   vscode.workspace.workspaceFolders![0].uri.fsPath || ""
@@ -47,6 +48,7 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(disposable);
+  reactrouter(context)
 }
 
 // This method is called when your extension is deactivated
