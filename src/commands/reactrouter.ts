@@ -14,6 +14,21 @@ import { getFileContent } from "../utils/file";
 import * as _ from "lodash";
 import { renderTemplate } from "../utils/ejs";
 
+type PageRoute = {
+  path: string;
+  route: string;
+};
+type ReactRouteBase = {
+  caseSensitive?: boolean;
+  children?: ReactRouteBase[];
+  element?: string;
+  lazy?: string;
+  index?: boolean;
+  path?: string;
+  loader?: string;
+  rawRoute: string;
+};
+
 export const dynamicRouteRE = /^\[(.+)\]$/;
 export const cacheAllRouteRE = /^\[\.{3}(.*)\]$/;
 export const replaceDynamicRouteRE = /^\[(?:\.{3})?(.*)\]$/;
@@ -26,7 +41,7 @@ export const countSlashRE = /\//g;
 export const replaceIndexRE = /\/?index$/;
 
 const pageDirPath = path.join("src", "pages");
-
+const extension = "tsc";
 export function normalizeName(
   name: string,
   isDynamic: boolean,
@@ -38,7 +53,10 @@ export function normalizeName(
     ? name.replace(nuxtDynamicRouteRE, "$1") || "all"
     : name.replace(replaceDynamicRouteRE, "$1");
 }
-
+export function normalizeCase(str: string, caseSensitive: boolean) {
+  if (!caseSensitive) return str.toLocaleLowerCase();
+  return str;
+}
 const buildReactRoutePath = (route: string) => {
   const isDynamic = dynamicRouteRE.test(route);
   const isCatchAll = cacheAllRouteRE.test(route);
@@ -123,8 +141,7 @@ export function stringifyRoutes(preparedRoutes: any[]) {
         .toString()
         .replace(multilineCommentsRE, "")
         .replace(singlelineCommentsRE, "")
-        .replace(/(\t|\n|\r|\s)/g, "")
-  
+        .replace(/(\t|\n|\r|\s)/g, "");
 
       // ES6 Arrow Function
       // if (fnBody.length < 8 || fnBody.substring(0, 8) !== 'function')
@@ -139,10 +156,9 @@ export function stringifyRoutes(preparedRoutes: any[]) {
     return value;
   }
 
-  const stringRoutes = JSON.stringify(preparedRoutes, replaceFunction)
+  const stringRoutes = JSON.stringify(preparedRoutes, replaceFunction);
   // .replace(/"\(/g, "(")
   // .replace(/\)"/g, ")")
-  ;
   // .replace(componentRE, componentReplacer)
   // .replace(hasFunctionRE, functionReplacer)
 
@@ -174,57 +190,127 @@ export default (context: vscode.ExtensionContext) => {
       let pageDirFiles = await glob(`src/pages/**/*.{js,tsx}`, {
         cwd: rootPath,
       });
-      pageDirFiles = pageDirFiles.sort(
-        (a, b) => a.split("\\").length - b.split("\\").length
-      );
-      const pageRoutes: any[] = [];
+      // pageDirFiles = pageDirFiles.sort(
+      //   (a, b) => a.split("\\").length - b.split("\\").length
+      // );
+      const pageRouteMap = new Map<string, PageRoute>();
 
-      for (const page of pageDirFiles) {
-        // console.log("found a page file:", page);
-        const route = page.replace(`${pageDirPath}\\`, "").replace(".tsx", "");
-        console.log("route:", route);
-        const pathRoutes = route.split("\\");
+      for (const p of pageDirFiles) {
+        // pageRoutes.push({});
+        const route = p
+          .replace(`${pageDirPath}\\`, "")
+          .replace(`.${extension}`, "");
 
-        const fileContent = getFileContent(page);
-        // console.log("file content:", getFileContent(page));
-
-        const importMode = /export\s+default/.test(fileContent) ? 'sync': 'async'
-
-        var pageRoute = {
-          path: page,
-          route: _.last(pathRoutes),
-          children: [],
-          importMode
-        };
-
-        let parentRoutes = pageRoutes;
-
-        var i = 1;
-        while (i < pathRoutes.length) {
-          var nextNode = parentRoutes.find(
-            (it) => it.route == pathRoutes[i - 1]
-          );
-
-          if (!nextNode) {
-            console.log("create route: ", pathRoutes[i - 1]);
-            nextNode = {
-              route: pathRoutes[i - 1],
-              children: [],
-            };
-            parentRoutes.push(nextNode);
-          }
-          console.log("parent route: ", nextNode.route);
-          parentRoutes = nextNode.children;
-          i++;
-        }
-
-        parentRoutes.push(pageRoute);
+        pageRouteMap.set(p, {
+          path: p,
+          route,
+        });
       }
 
-      let finalRoutes = prepareRoutes(pageRoutes);
+      const pageRoutes = [...pageRouteMap.values()]
+        // sort routes for HMR
+        .sort(
+          (a, b) => a.route.split("\\").length - b.route.split("\\").length
+        );
+
+      const routes: ReactRouteBase[] = [];
+      const caseSensitive = false;
+      pageRoutes.forEach((page) => {
+        const pathNodes = page.route.split("\\");
+        const element = page.path.replace(pageDirPath, "");
+        let parentRoutes = routes;
+
+        for (let i = 0; i < pathNodes.length; i++) {
+          const node = pathNodes[i];
+
+          const route: ReactRouteBase = {
+            caseSensitive,
+            path: "",
+            rawRoute: pathNodes.slice(0, i + 1).join("/"),
+          };
+
+          if (i === pathNodes.length - 1) route.element = element;
+
+          const isIndexRoute = normalizeCase(node, caseSensitive).endsWith(
+            "index"
+          );
+
+          if (!route.path && isIndexRoute) {
+            route.path = "/";
+          } else if (!isIndexRoute) {
+            route.path = buildReactRoutePath(node);
+          }
+
+          const parent = parentRoutes.find((parent) => {
+            return pathNodes.slice(0, i).join("/") === parent.rawRoute;
+          });
+
+          if (parent) {
+            // Make sure children exits in parent
+            parent.children = parent.children || [];
+            // Append to parent's children
+            parentRoutes = parent.children;
+          }
+
+          const exits = parentRoutes.some((parent) => {
+            return pathNodes.slice(0, i + 1).join("/") === parent.rawRoute;
+          });
+          if (!exits) parentRoutes.push(route);
+        }
+
+        // routes.push({
+        //   element,
+        //   rawRoute: page.path,
+        // });
+      });
+
+      // for (const page of pageDirFiles) {
+      //   // console.log("found a page file:", page);
+      //   const route = page.replace(`${pageDirPath}\\`, "").replace(".tsx", "");
+      //   console.log("route:", route);
+      //   const pathRoutes = route.split("\\");
+
+      //   const fileContent = getFileContent(page);
+      //   // console.log("file content:", getFileContent(page));
+
+      //   const importMode = /export\s+default/.test(fileContent) ? 'sync': 'async'
+
+      //   var pageRoute = {
+      //     path: page,
+      //     route: _.last(pathRoutes),
+      //     children: [],
+      //     importMode
+      //   };
+
+      //   let parentRoutes = pageRoutes;
+
+      //   var i = 1;
+      //   while (i < pathRoutes.length) {
+      //     var nextNode = parentRoutes.find(
+      //       (it) => it.route == pathRoutes[i - 1]
+      //     );
+
+      //     if (!nextNode) {
+      //       console.log("create route: ", pathRoutes[i - 1]);
+      //       nextNode = {
+      //         route: pathRoutes[i - 1],
+      //         children: [],
+      //       };
+      //       parentRoutes.push(nextNode);
+      //     }
+      //     console.log("parent route: ", nextNode.route);
+      //     parentRoutes = nextNode.children;
+      //     i++;
+      //   }
+
+      //   parentRoutes.push(pageRoute);
+      // }
+
+      // let finalRoutes = prepareRoutes(pageRoutes);
 
       console.log("pageRoutes", JSON.stringify(pageRoutes));
-      console.log("finalRoutes", generateClientCode(finalRoutes));
+      console.log("routes", JSON.stringify(routes));
+      // console.log("finalRoutes", generateClientCode(finalRoutes));
 
       // var content = await renderTemplate(`
       // export default [
@@ -304,7 +390,7 @@ export default (context: vscode.ExtensionContext) => {
       //     console.log("error", error);
       //   }
 
-        // console.log("file content:", getFileContent(file));
+      // console.log("file content:", getFileContent(file));
       // }
 
       // var pageRouteMap = new Map<string, any>();
