@@ -204,7 +204,7 @@ export function stringifyRoutes(preparedRoutes: any[]) {
 
 export async function generateClientCode(routes: any[]) {
   const { imports, stringRoutes } = stringifyRoutes(routes);
-  let code = `import React from "react";\n${imports.join(
+  let code = `${imports.join(
     ";\n"
   )};\n\nconst routes = ${stringRoutes};\n\nexport default routes;`;
 
