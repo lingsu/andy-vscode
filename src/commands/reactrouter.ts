@@ -10,9 +10,12 @@ import * as ts from "typescript";
 import { Project, StructureKind } from "ts-morph";
 
 import { getEnv, rootPath } from "../utils/vscodeEnv";
-import { getFileContent } from "../utils/file";
+import { getFileContent, writeFile } from "../utils/file";
 import * as _ from "lodash";
+import * as prettier from "prettier";
+
 import { renderTemplate } from "../utils/ejs";
+import { getOutputChannel } from "../utils/outputChannel";
 
 type PageRoute = {
   path: string;
@@ -28,6 +31,14 @@ type ReactRouteBase = {
   loader?: string;
   rawRoute: string;
 };
+type ReactRoute = Omit<
+  Pick<Partial<ReactRouteBase>, "rawRoute" | "path">,
+  "children"
+> & {
+  children?: ReactRoute[];
+};
+
+export const ROUTE_IMPORT_NAME = "__pages_import_$1__";
 
 export const dynamicRouteRE = /^\[(.+)\]$/;
 export const cacheAllRouteRE = /^\[\.{3}(.*)\]$/;
@@ -40,8 +51,21 @@ export const countSlashRE = /\//g;
 
 export const replaceIndexRE = /\/?index$/;
 
+const componentRE = /"(?:component|element)":("(.*?)")/g;
+const componentLAZY = /"(?:lazy)":("(.*?)")/g;
+const hasFunctionRE = /"(?:props|beforeEnter)":("(.*?)")/g;
+
+const multilineCommentsRE = /\/\*(.|[\r\n])*?\*\//gm;
+const singlelineCommentsRE = /\/\/.*/g;
+
 const pageDirPath = path.join("src", "pages");
-const extension = "tsc";
+
+const targetFilePath = path.join(rootPath,'src',"routes.tsx")
+
+const extension = "tsx";
+
+const channel = getOutputChannel();
+
 export function normalizeName(
   name: string,
   isDynamic: boolean,
@@ -71,22 +95,11 @@ const buildReactRoutePath = (route: string) => {
   return `${normalizedName}`;
 };
 
-const prepareRoutes = (routes: any[]) => {
+const prepareRoutes = (routes: ReactRoute[], parent?: ReactRoute) => {
   for (const route of routes) {
-    route.route = buildReactRoutePath(route.route);
-    if (route.route === "index") route.route = "";
+    if (parent) route.path = route.path?.replace(/^\//, "");
 
-    if (route.path) {
-      route.path = route.path.replace("src", ".");
-      var path = route.path.replace("src", ".");
-      route.lazy = `() => import('${path}')`;
-      delete route.path;
-    }
-    if (route.children && route.children.length > 0)
-      route.children = prepareRoutes(route.children);
-    else {
-      delete route.children;
-    }
+    if (route.children) route.children = prepareRoutes(route.children, route);
 
     delete route.rawRoute;
 
@@ -102,27 +115,43 @@ const prepareRoutes = (routes: any[]) => {
 export function stringifyRoutes(preparedRoutes: any[]) {
   const importsMap: Map<string, string> = new Map();
 
-  // function getImportString(path: string, importName: string) {
-  //   const mode = 'async';
-  //   return mode === 'sync'
-  //     ? `import ${importName} from "${path}"`
-  //     : `const ${importName} = ${
-  //       options.resolver.stringify?.dynamicImport?.(path) || `() => import("${path}")`
-  //     }`
-  // }
+  function getImportString(path: string, importName: string) {
+    return `import ${importName} from "${path}"`;
 
-  // function componentReplacer(str: string, replaceStr: string, path: string) {
-  //   let importName = importsMap.get(path)
+    // const mode = 'async';
+    // return mode === 'sync'
+    //   ? `import ${importName} from "${path}"`
+    //   : `const ${importName} = ${
+    //     options.resolver.stringify?.dynamicImport?.(path) || `() => import("${path}")`
+    //   }`
+  }
 
-  //   if (!importName)
-  //     importName = ROUTE_IMPORT_NAME.replace('$1', `${importsMap.size}`)
+  function componentReplacer(str: string, replaceStr: string, path: string) {
+    // console.log("componentReplacer", str, replaceStr, path);
+    let importName = importsMap.get(path);
 
-  //   importsMap.set(path, importName)
+    if (!importName)
+      importName = ROUTE_IMPORT_NAME.replace("$1", `${importsMap.size}`);
 
-  //   importName = options.resolver.stringify?.component?.(importName) || importName
+    importsMap.set(path, importName);
 
-  //   return str.replace(replaceStr, importName)
-  // }
+    // importName = options.resolver.stringify?.component?.(importName) || importName
+
+    // return str.replace(replaceStr, `React.createElement(${importName})`);
+    return str.replace(replaceStr, `<${importName} />`);
+  }
+
+  function lazyComponentReplacer(
+    str: string,
+    replaceStr: string,
+    path: string
+  ) {
+    // console.log("lazyComponentReplacer", str, replaceStr, path);
+
+    // importName = options.resolver.stringify?.component?.(importName) || importName
+
+    return str.replace(replaceStr, `() => import("${path}")`);
+  }
 
   function functionReplacer(str: string, replaceStr: string, content: string) {
     if (content.startsWith("function")) return str.replace(replaceStr, content);
@@ -149,39 +178,44 @@ export function stringifyRoutes(preparedRoutes: any[]) {
 
       return fnBody;
     }
-    if (typeof value === "string" && /\/?=>/.test(value)) {
-      value = value.substring(1, value.length - 2);
-    }
+    // if (typeof value === "string" && /\/?=>/.test(value)) {
+    //   value = value.substring(1, value.length - 2);
+    // }
 
     return value;
   }
 
-  const stringRoutes = JSON.stringify(preparedRoutes, replaceFunction);
-  // .replace(/"\(/g, "(")
-  // .replace(/\)"/g, ")")
-  // .replace(componentRE, componentReplacer)
+  const stringRoutes = JSON.stringify(preparedRoutes, replaceFunction)
+    // .replace(/"\(/g, "(")
+    // .replace(/\)"/g, ")")
+    .replace(componentRE, componentReplacer)
+    .replace(componentLAZY, lazyComponentReplacer);
   // .replace(hasFunctionRE, functionReplacer)
 
-  // const imports = Array.from(importsMap).map(args => getImportString(...args))
+  const imports = Array.from(importsMap).map((args) =>
+    getImportString(...args)
+  );
 
   return {
-    imports: [],
+    imports: imports,
     stringRoutes,
   };
 }
 
-export function generateClientCode(routes: any[]) {
+export async function generateClientCode(routes: any[]) {
   const { imports, stringRoutes } = stringifyRoutes(routes);
-  const code = `${imports.join(
+  let code = `import React from "react";\n${imports.join(
     ";\n"
   )};\n\nconst routes = ${stringRoutes};\n\nexport default routes;`;
+
   return code;
 }
 export default (context: vscode.ExtensionContext) => {
   let disposable = vscode.commands.registerCommand(
     "andy-vscode.reactrouter",
     async () => {
-      console.log("pageDirPath", pageDirPath);
+
+      channel.appendLine("dirs:" + pageDirPath)
       // The code you place here will be executed every time your command is executed
       // Display a message box to the user
 
@@ -199,7 +233,9 @@ export default (context: vscode.ExtensionContext) => {
         // pageRoutes.push({});
         const route = p
           .replace(`${pageDirPath}\\`, "")
-          .replace(`.${extension}`, "");
+          .replace(`.${extension}`, "")
+          .split("\\")
+          .join("/");
 
         pageRouteMap.set(p, {
           path: p,
@@ -209,15 +245,21 @@ export default (context: vscode.ExtensionContext) => {
 
       const pageRoutes = [...pageRouteMap.values()]
         // sort routes for HMR
-        .sort(
-          (a, b) => a.route.split("\\").length - b.route.split("\\").length
-        );
+        .sort((a, b) => a.route.split("/").length - b.route.split("/").length);
 
       const routes: ReactRouteBase[] = [];
       const caseSensitive = false;
       pageRoutes.forEach((page) => {
-        const pathNodes = page.route.split("\\");
-        const element = page.path.replace(pageDirPath, "");
+        const fileContent = getFileContent(page.path);
+        // console.log("file content:", getFileContent(page));
+
+        const importMode = /export\s+default/.test(fileContent)
+          ? "sync"
+          : "async";
+
+        const pathNodes = page.route.split("/");
+        const element =
+          "./pages" + page.path.replace(pageDirPath, "").split("\\").join("/");
         let parentRoutes = routes;
 
         for (let i = 0; i < pathNodes.length; i++) {
@@ -229,7 +271,13 @@ export default (context: vscode.ExtensionContext) => {
             rawRoute: pathNodes.slice(0, i + 1).join("/"),
           };
 
-          if (i === pathNodes.length - 1) route.element = element;
+          if (i === pathNodes.length - 1) {
+            if (importMode == "sync") {
+              route.element = element;
+            } else {
+              route.lazy = element;
+            }
+          }
 
           const isIndexRoute = normalizeCase(node, caseSensitive).endsWith(
             "index"
@@ -306,11 +354,25 @@ export default (context: vscode.ExtensionContext) => {
       //   parentRoutes.push(pageRoute);
       // }
 
-      // let finalRoutes = prepareRoutes(pageRoutes);
+      let finalRoutes = prepareRoutes(routes);
 
-      console.log("pageRoutes", JSON.stringify(pageRoutes));
-      console.log("routes", JSON.stringify(routes));
-      // console.log("finalRoutes", generateClientCode(finalRoutes));
+      // console.log("pageRouteMap", JSON.stringify([...pageRouteMap.values()]));
+      // console.log("pageRoutes", JSON.stringify(pageRoutes));
+      // console.log("routes", JSON.stringify(routes));
+      // console.log("finalRoutes", JSON.stringify(finalRoutes));
+
+      var code = await generateClientCode(finalRoutes);
+
+      writeFile(code, targetFilePath);
+
+      // try {
+      //   code = await prettier.format(code, {
+      //     singleQuote: true,
+      //     filepath: targetFilePath,
+      //   });
+      // } catch (error) {
+      //   console.log("prettier error", error);
+      // }
 
       // var content = await renderTemplate(`
       // export default [

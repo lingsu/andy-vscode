@@ -1,9 +1,10 @@
-import * as path from 'path';
-import * as fs from 'fs';
-import { rootPath } from './vscodeEnv';
+import * as path from "path";
+import * as fs from "fs";
+import * as prettier from "prettier";
+import { rootPath } from "./vscodeEnv";
 
 export const getFileContent = (filePath: string, fullPath = false) => {
-  let fileContent = '';
+  let fileContent = "";
   const fileFullPath = fullPath ? filePath : path.join(rootPath, filePath);
   try {
     const fileBuffer = fs.readFileSync(fileFullPath);
@@ -49,3 +50,17 @@ export const getFileContent = (filePath: string, fullPath = false) => {
 
 //   return files
 // }
+
+export async function writeFile(content: string, targetFilePath: string) {
+  fs.writeFileSync(targetFilePath, content);
+
+  try {
+    content = await prettier.format(content, {
+      singleQuote: true,
+      filepath: targetFilePath,
+    });
+    fs.writeFileSync(targetFilePath, content);
+  } catch (error) {
+    console.log("prettier error", error);
+  }
+}
