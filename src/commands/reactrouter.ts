@@ -212,7 +212,7 @@ export async function generateClientCode(routes: any[]) {
 }
 export default (context: vscode.ExtensionContext) => {
   let disposable = vscode.commands.registerCommand(
-    "andy-vscode.reactrouter",
+    "andy-tool.reactrouter",
     async () => {
 
       channel.appendLine("dirs:" + pageDirPath)
