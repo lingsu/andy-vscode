@@ -214,8 +214,8 @@ export default (context: vscode.ExtensionContext) => {
   let disposable = vscode.commands.registerCommand(
     "andy-tool.reactrouter",
     async () => {
-
-      channel.appendLine("dirs:" + pageDirPath)
+      channel.show();
+      channel.appendLine("page dir path : " + pageDirPath)
       // The code you place here will be executed every time your command is executed
       // Display a message box to the user
 
@@ -223,6 +223,7 @@ export default (context: vscode.ExtensionContext) => {
 
       let pageDirFiles = await glob(`src/pages/**/*.{js,tsx}`, {
         cwd: rootPath,
+        ignore: '**/components/**'
       });
       // pageDirFiles = pageDirFiles.sort(
       //   (a, b) => a.split("\\").length - b.split("\\").length
@@ -230,6 +231,8 @@ export default (context: vscode.ExtensionContext) => {
       const pageRouteMap = new Map<string, PageRoute>();
 
       for (const p of pageDirFiles) {
+        channel.appendLine("find a file " + p)
+
         // pageRoutes.push({});
         const route = p
           .replace(`${pageDirPath}\\`, "")
@@ -259,7 +262,7 @@ export default (context: vscode.ExtensionContext) => {
 
         const pathNodes = page.route.split("/");
         const element =
-          "./pages" + page.path.replace(pageDirPath, "").split("\\").join("/");
+          "./pages" + page.path.replace(pageDirPath, "").split("\\").join("/").replace(`.${extension}`,"");
         let parentRoutes = routes;
 
         for (let i = 0; i < pathNodes.length; i++) {
