@@ -60,7 +60,7 @@ const singlelineCommentsRE = /\/\/.*/g;
 
 const pageDirPath = path.join("src", "pages");
 
-const targetFilePath = path.join(rootPath,'src',"routes.tsx")
+const targetFilePath = path.join(rootPath, "src", "routes.tsx");
 
 const extension = "tsx";
 
@@ -215,7 +215,7 @@ export default (context: vscode.ExtensionContext) => {
     "andy-tool.reactrouter",
     async () => {
       channel.show();
-      channel.appendLine("page dir path : " + pageDirPath)
+      channel.appendLine("page dir path : " + pageDirPath);
       // The code you place here will be executed every time your command is executed
       // Display a message box to the user
 
@@ -223,7 +223,7 @@ export default (context: vscode.ExtensionContext) => {
 
       let pageDirFiles = await glob(`src/pages/**/*.{js,tsx}`, {
         cwd: rootPath,
-        ignore: '**/components/**'
+        ignore: "**/components/**",
       });
       // pageDirFiles = pageDirFiles.sort(
       //   (a, b) => a.split("\\").length - b.split("\\").length
@@ -231,7 +231,7 @@ export default (context: vscode.ExtensionContext) => {
       const pageRouteMap = new Map<string, PageRoute>();
 
       for (const p of pageDirFiles) {
-        channel.appendLine("find a file " + p)
+        channel.appendLine("find a file " + p);
 
         // pageRoutes.push({});
         const route = p
@@ -262,7 +262,12 @@ export default (context: vscode.ExtensionContext) => {
 
         const pathNodes = page.route.split("/");
         const element =
-          "./pages" + page.path.replace(pageDirPath, "").split("\\").join("/").replace(`.${extension}`,"");
+          "./pages" +
+          page.path
+            .replace(pageDirPath, "")
+            .split("\\")
+            .join("/")
+            .replace(`.${extension}`, "");
         let parentRoutes = routes;
 
         for (let i = 0; i < pathNodes.length; i++) {
@@ -308,178 +313,15 @@ export default (context: vscode.ExtensionContext) => {
           });
           if (!exits) parentRoutes.push(route);
         }
-
-        // routes.push({
-        //   element,
-        //   rawRoute: page.path,
-        // });
       });
 
-      // for (const page of pageDirFiles) {
-      //   // console.log("found a page file:", page);
-      //   const route = page.replace(`${pageDirPath}\\`, "").replace(".tsx", "");
-      //   console.log("route:", route);
-      //   const pathRoutes = route.split("\\");
-
-      //   const fileContent = getFileContent(page);
-      //   // console.log("file content:", getFileContent(page));
-
-      //   const importMode = /export\s+default/.test(fileContent) ? 'sync': 'async'
-
-      //   var pageRoute = {
-      //     path: page,
-      //     route: _.last(pathRoutes),
-      //     children: [],
-      //     importMode
-      //   };
-
-      //   let parentRoutes = pageRoutes;
-
-      //   var i = 1;
-      //   while (i < pathRoutes.length) {
-      //     var nextNode = parentRoutes.find(
-      //       (it) => it.route == pathRoutes[i - 1]
-      //     );
-
-      //     if (!nextNode) {
-      //       console.log("create route: ", pathRoutes[i - 1]);
-      //       nextNode = {
-      //         route: pathRoutes[i - 1],
-      //         children: [],
-      //       };
-      //       parentRoutes.push(nextNode);
-      //     }
-      //     console.log("parent route: ", nextNode.route);
-      //     parentRoutes = nextNode.children;
-      //     i++;
-      //   }
-
-      //   parentRoutes.push(pageRoute);
-      // }
-
       let finalRoutes = prepareRoutes(routes);
-
-      // console.log("pageRouteMap", JSON.stringify([...pageRouteMap.values()]));
-      // console.log("pageRoutes", JSON.stringify(pageRoutes));
-      // console.log("routes", JSON.stringify(routes));
-      // console.log("finalRoutes", JSON.stringify(finalRoutes));
 
       var code = await generateClientCode(finalRoutes);
 
       writeFile(code, targetFilePath);
 
-      // try {
-      //   code = await prettier.format(code, {
-      //     singleQuote: true,
-      //     filepath: targetFilePath,
-      //   });
-      // } catch (error) {
-      //   console.log("prettier error", error);
-      // }
-
-      // var content = await renderTemplate(`
-      // export default [
-      //   <% model.forEach(function(user){ %>
-
-      //   <% }); %>
-
-      //   {
-      //     path: "/",
-      //     element: <Root />,
-      //     children: [
-      //       {
-      //         path: "contact",
-      //         element: <Contact />,
-      //       },
-      //       {
-      //         path: "dashboard",
-      //         element: <Dashboard />,
-      //         loader: ({ request }) =>
-      //           fetch("/api/dashboard.json", {
-      //             signal: request.signal,
-      //           }),
-      //       },
-      //       {
-      //         element: <AuthLayout />,
-      //         children: [
-      //           {
-      //             path: "login",
-      //             element: <Login />,
-      //             loader: redirectIfUser,
-      //           },
-      //           {
-      //             path: "logout",
-      //             action: logoutUser,
-      //           },
-      //         ],
-      //       },
-      //     ],
-      //   },
-      //   ]
-
-      // `, {model: finalRoutes});
-
-      // console.log('content',content)
-      // var pages = [];
-      // for (const dir of pageDirFiles) {
-      //   console.log("found a page file:", dir);
-      //   // const source = getFileContent(file);
-      //   var page = {
-      //     path: dir.replace(`${pageDirPath}`, ''),
-      //     files: await getPageFiles(dir),
-      //   };
-      //   pages.push(page);
-      //   try {
-      //     // const tsAst = recast.parse(source, {
-      //     //   parser: require("recast/parsers/typescript"),
-      //     //   esprima:{
-      //     //     jsx: true,
-      //     //     // tsx: true
-      //     //   }
-      //     // });
-      //     // initialize
-      //     // const project = new Project({
-      //     //   tsConfigFilePath: path.join(env.rootPath, "tsconfig.json"),
-      //     //   skipFileDependencyResolution: true,
-      //     //   // Optionally specify compiler options, tsconfig.json, in-memory file system, and more here.
-      //     //   // If you initialize with a tsconfig.json, then it will automatically populate the project
-      //     //   // with the associated source files.
-      //     //   // Read more: https://ts-morph.com/setup/
-      //     // });
-      //     // project.getSourceFile(path.join(env.rootPath, file))
-      //     // const sourceFile = ts.createSourceFile("temp.ts", source, {
-      //     //   target: "Latest",
-      //     // });
-      //     // console.log("reactrouter");
-      //   } catch (error) {
-      //     console.log("error", error);
-      //   }
-
-      // console.log("file content:", getFileContent(file));
-      // }
-
-      // var pageRouteMap = new Map<string, any>();
-
-      // const addPage = (paths: string[], pageDir: string) => {
-
-      //   for (const p of paths) {
-      //     pageRouteMap.set(p, {
-      //       path: p,
-      //       route: p
-      //     })
-      //   }
-
-      // };
-      // pages.forEach((it) => addPage(it.files, it.path));
-
-      // const pageRoutes  = [];
-
-      // console.log('pages', JSON.stringify(pages))
-      // console.log('pageRouteMap', JSON.stringify(pageRouteMap))
-      // console.log("first", vscode.Uri);
-      // console.log("first", vscode.workspace.rootPath);
-      // src/router.tsx
-      //   vscode.window.
+      vscode.window.showInformationMessage("react router生成完成!");
     }
   );
   context.subscriptions.push(disposable);
