@@ -2,7 +2,7 @@
 	"name": "andy-tool",
 	"displayName": "andy tool",
 	"description": "开发工具集",
-	"version": "0.0.4",
+	"version": "0.0.5",
 	"publisher": "andy2023",
 	"repository": "https://github.com/lingsu/andy-vscode",
 	"engines": {
@@ -63,6 +63,7 @@
 		}
 	},
 	"scripts": {
+		"vscode:publish": "vsce package --no-dependencies",
 		"vscode:prepublish": "pnpm run package",
 		"compile": "webpack",
 		"watch": "webpack --watch",
