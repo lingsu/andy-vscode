@@ -2,9 +2,10 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 // import * as copyPaste from "copy-paste";
-// import * as fs from "fs-extra";
-// import * as path from "path";
+import * as fs from "fs-extra";
+import * as path from "path";
 import reactrouter from "./commands/reactrouter";
+import { tempWorkPath } from "./utils/vscodeEnv";
 
 // export const rootPath = path.join(
 //   vscode.workspace.workspaceFolders![0].uri.fsPath || ""
@@ -17,11 +18,20 @@ import reactrouter from "./commands/reactrouter";
 export function activate(context: vscode.ExtensionContext) {
   // Use the console to output diagnostic information (console.log) and errors (console.error)
   // This line of code will only be executed once when your extension is activated
-  console.log('Congratulations, your extension "andy-tool" is now active!');
+  // console.log('Congratulations, your extension "andy-tool" is now active!');
 
   // The command has been defined in the package.json file
   // Now provide the implementation of the command with registerCommand
   // The commandId parameter must match the command field in package.json
+
+  fs.ensureDir(tempWorkPath).then(async () => {
+    var exists = await fs.exists(path.join(tempWorkPath, ".gitignore"));
+    if (exists === false) {
+      await fs.writeFile(path.join(tempWorkPath, ".gitignore"),`*`)
+    }
+    console.log("success", exists);
+  });
+
   let disposable = vscode.commands.registerCommand(
     "andy-tool.helloWorld",
     async () => {
@@ -41,14 +51,21 @@ export function activate(context: vscode.ExtensionContext) {
 
       // vscode.window.showInformationMessage('Hello World from andy vscode!' );
 
-      vscode.window.activeTextEditor?.insertSnippet(
-        new vscode.SnippetString("test abc")
-      );
+      // vscode.window.activeTextEditor?.insertSnippet(
+      //   new vscode.SnippetString("test abc")
+      // );
+      // vscode
+
+      // console.log("clipboard" , await vscode.env.clipboard.readText());
+      console.log("workspaceFolders", vscode.workspace.workspaceFolders);
+      console.log("workspaceFile", vscode.workspace.workspaceFile);
+      console.log("rootPath", vscode.workspace.rootPath);
+      console.log("appRoot", vscode.env.appRoot);
     }
   );
 
   context.subscriptions.push(disposable);
-  reactrouter(context)
+  reactrouter(context);
 }
 
 // This method is called when your extension is deactivated

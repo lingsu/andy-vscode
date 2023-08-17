@@ -6,6 +6,9 @@ import * as fs from "fs-extra";
 export const rootPath = path.join(
   vscode.workspace.workspaceFolders![0].uri.fsPath || ""
 );
+
+export const tempWorkPath = path.join(rootPath, '.andy');
+
 export const materialsPath = path.join(rootPath, 'materials');
 
 export const blockMaterialsPath = path.join(materialsPath, 'blocks');
