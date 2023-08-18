@@ -6,6 +6,11 @@ import * as fs from "fs-extra";
 import * as path from "path";
 import reactrouter from "./commands/reactrouter";
 import { tempWorkPath } from "./utils/vscodeEnv";
+import { downloadMaterialsFromGit } from "./utils/download";
+import { getOutputChannel } from "./utils/outputChannel";
+import { getRemote } from "./utils/configuration";
+
+const channel = getOutputChannel();
 
 // export const rootPath = path.join(
 //   vscode.workspace.workspaceFolders![0].uri.fsPath || ""
@@ -27,9 +32,8 @@ export function activate(context: vscode.ExtensionContext) {
   fs.ensureDir(tempWorkPath).then(async () => {
     var exists = await fs.exists(path.join(tempWorkPath, ".gitignore"));
     if (exists === false) {
-      await fs.writeFile(path.join(tempWorkPath, ".gitignore"),`*`)
+      await fs.writeFile(path.join(tempWorkPath, ".gitignore"), `*`);
     }
-    console.log("success", exists);
   });
 
   let disposable = vscode.commands.registerCommand(
@@ -61,6 +65,22 @@ export function activate(context: vscode.ExtensionContext) {
       console.log("workspaceFile", vscode.workspace.workspaceFile);
       console.log("rootPath", vscode.workspace.rootPath);
       console.log("appRoot", vscode.env.appRoot);
+      console.log("extensionPath", context.extensionPath);
+
+      channel.show();
+
+      const remote = getRemote();
+      channel.appendLine(`开始下载模板：${remote}`);
+      await downloadMaterialsFromGit(
+        remote
+      );
+      channel.appendLine("模板下载完成");
+
+
+      var editor = vscode.window.activeTextEditor;
+      if (editor) {
+        // editor.document.
+      }
     }
   );
 
