@@ -11,6 +11,9 @@ dependencies:
   acorn:
     specifier: ^8.10.0
     version: registry.npmmirror.com/acorn@8.10.0
+  acorn-jsx:
+    specifier: ^5.3.2
+    version: registry.npmmirror.com/acorn-jsx@5.3.2(acorn@8.10.0)
   copy-paste:
     specifier: ^1.5.3
     version: registry.npmmirror.com/copy-paste@1.5.3
@@ -797,7 +800,6 @@ packages:
       acorn: ^6.0.0 || ^7.0.0 || ^8.0.0
     dependencies:
       acorn: registry.npmmirror.com/acorn@8.10.0
-    dev: true
 
   registry.npmmirror.com/acorn@8.10.0:
     resolution: {integrity: sha512-F0SAmZ8iUtS//m8DmCTA0jlh6TDKkHQyK6xc6V4KDTyZKA9dnvX9/3sRTVQrWm79glUAZbnmmNcdYwUIHWVybw==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/acorn/-/acorn-8.10.0.tgz}
