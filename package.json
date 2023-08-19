@@ -104,6 +104,7 @@
 	},
 	"dependencies": {
 		"@babel/parser": "^7.22.10",
+		"acorn": "^8.10.0",
 		"copy-paste": "^1.5.3",
 		"directory-tree": "^3.5.1",
 		"ejs": "^3.1.9",
