@@ -20,6 +20,10 @@
 				"title": "Hello World"
 			},
 			{
+				"command": "andy-tool.openapi",
+				"title": "根据 OpenApi3 文档生成 request 请求代码。"
+			},
+			{
 				"command": "andy-tool.reactrouter",
 				"title": "生成React Router路由"
 			}
@@ -104,6 +108,7 @@
 	},
 	"dependencies": {
 		"@babel/parser": "^7.22.10",
+		"@umijs/openapi": "^1.8.5",
 		"acorn": "^8.10.0",
 		"acorn-jsx": "^5.3.2",
 		"copy-paste": "^1.5.3",
