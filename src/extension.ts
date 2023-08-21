@@ -9,6 +9,8 @@ import { tempWorkPath } from "./utils/vscodeEnv";
 import { downloadMaterialsFromGit } from "./utils/download";
 import { getOutputChannel } from "./utils/outputChannel";
 import { getRemote } from "./utils/configuration";
+import openapi from "./commands/openapi";
+import helloworld from "./commands/helloworld";
 
 const channel = getOutputChannel();
 
@@ -35,57 +37,10 @@ export function activate(context: vscode.ExtensionContext) {
       await fs.writeFile(path.join(tempWorkPath, ".gitignore"), `*`);
     }
   });
-
-  let disposable = vscode.commands.registerCommand(
-    "andy-tool.helloWorld",
-    async () => {
-      // The code you place here will be executed every time your command is executed
-      // Display a message box to the user
-
-      // try {
-      //   const rawClipboardText = await copyPaste.paste();
-      //   let clipboardText = rawClipboardText.trim();
-
-      //   vscode.window.showInformationMessage(
-      //     "Hello World from andy vscode!" + clipboardText
-      //   );
-      // } catch (error) {
-      //   console.log(error);
-      // }
-
-      // vscode.window.showInformationMessage('Hello World from andy vscode!' );
-
-      // vscode.window.activeTextEditor?.insertSnippet(
-      //   new vscode.SnippetString("test abc")
-      // );
-      // vscode
-
-      // console.log("clipboard" , await vscode.env.clipboard.readText());
-      console.log("workspaceFolders", vscode.workspace.workspaceFolders);
-      console.log("workspaceFile", vscode.workspace.workspaceFile);
-      console.log("rootPath", vscode.workspace.rootPath);
-      console.log("appRoot", vscode.env.appRoot);
-      console.log("extensionPath", context.extensionPath);
-
-      channel.show();
-
-      const remote = getRemote();
-      channel.appendLine(`开始下载模板：${remote}`);
-      await downloadMaterialsFromGit(
-        remote
-      );
-      channel.appendLine("模板下载完成");
-
-
-      var editor = vscode.window.activeTextEditor;
-      if (editor) {
-        // editor.document.
-      }
-    }
-  );
-
-  context.subscriptions.push(disposable);
+ 
+  helloworld(context);
   reactrouter(context);
+  openapi(context);
 }
 
 // This method is called when your extension is deactivated
