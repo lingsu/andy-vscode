@@ -20,7 +20,7 @@ import type {
   ResponsesObject,
   SchemaObject,
 } from "openapi3-ts/oas30";
-import { getEnv, rootPath, tempWorkPath } from "../utils/vscodeEnv";
+import { getEnv, materialsPath, rootPath, tempWorkPath } from "../utils/vscodeEnv";
 import { getFileContent, writeFile } from "../utils/file";
 import { download } from "../utils/download";
 import * as _ from "lodash";
@@ -31,71 +31,8 @@ import { getOutputChannel } from "../utils/outputChannel";
 // import converter from 'swagger2openapi';
 
 import Log from "../utils/log";
+import { ServiceGenerator } from "../utils/openapi/serviceGenerator";
 
-type APIDataType = OperationObject & {
-  path: string;
-  method: string;
-};
-type Config = {
-  requestLibPath?: string;
-  requestImportStatement?: string;
-  /**
-   * api 的前缀
-   */
-  apiPrefix?:
-    | string
-    | ((params: {
-        path: string;
-        method: string;
-        namespace: string;
-        functionName: string;
-        autoExclude?: boolean;
-      }) => string);
-  /**
-   * 生成的文件夹的路径
-   */
-  serversPath?: string;
-  /**
-   * Swagger 2.0 或 OpenAPI 3.0 的地址
-   */
-  schemaPath?: string;
-  /**
-   * 项目名称
-   */
-  projectName: string;
-
-  hook?: {
-    /** 自定义函数名称 */
-    customFunctionName?: (data: OperationObject) => string;
-    /** 自定义类型名称 */
-    customTypeName?: (data: OperationObject) => string;
-    /** 自定义类名 */
-    customClassName?: (tagName: string) => string;
-  };
-  namespace?: string;
-
-  /**
-   * 默认为false，true时使用null代替可选
-   */
-  nullable?: boolean;
-
-  mockFolder?: string;
-  /**
-   * 模板文件的文件路径
-   */
-  templatesFolder?: string;
-
-  /**
-   * 枚举样式
-   */
-  enumStyle?: "string-literal" | "enum";
-
-  /**
-   * response中数据字段
-   * example: ['result', 'res']
-   */
-  dataFields?: string[];
-};
 const converterSwaggerToOpenApi = (swagger: any) => {
   console.log("swagger", swagger);
   if (!swagger.swagger) {
@@ -130,81 +67,23 @@ const getSchema = async (schemaPath: string) => {
   );
 };
 
-const genApiData = (openAPIData: any, basePath: string) => {
-  const apiData: Record<string, APIDataType[]> = {};
-
-  Object.keys(openAPIData.paths || {}).forEach((p) => {
-    const pathItem: PathItemObject = openAPIData.paths[p];
-
-    ["get", "put", "post", "delete", "patch"].forEach((method) => {
-      const operationObject: OperationObject = pathItem[method as any];
-      if (!operationObject) {
-        return;
-      }
-
-      // const tags = pathItem['x-swagger-router-controller']
-      //   ? [pathItem['x-swagger-router-controller']]
-      //   : operationObject.tags || [operationObject.operationId] || [
-      //       p.replace('/', '').split('/')[1],
-      //     ];
-
-      const tags = operationObject["x-swagger-router-controller"]
-        ? [operationObject["x-swagger-router-controller"]]
-        : operationObject.tags || [operationObject.operationId] || [
-            p.replace("/", "").split("/")[1],
-          ];
-
-      tags.forEach((tagString) => {
-        console.log("tagString", tagString);
-        // const tag = resolveTypeName(tagString);
-        const tag = tagString;
-
-        if (!apiData[tag]) {
-          apiData[tag] = [];
-        }
-        apiData[tag].push({
-          path: `${basePath}${p}`,
-          method,
-          ...operationObject,
-        });
-      });
-    });
-  });
-
-  return apiData;
-};
-
-const genFile = (
-  apiData: Record<string, APIDataType[]>,
-  basePath: string,
-  config: Config
-) => {
-  basePath = basePath || "./src/service";
-  const finalPath = path.join(rootPath, basePath, config.projectName);
-  console.log('finalPath',finalPath)
-
-  const genFileFromTemplate = () => {
-    
-  }
-
-
-
-};
 export default (context: vscode.ExtensionContext) => {
   let disposable = vscode.commands.registerCommand(
     "andy-tool.openapi",
     async () => {
       const requestLibPath = "";
 
-
-      const config =   {
-        namespace: 'API',
+      const config = {
+        namespace: "API",
         // requestImportStatement,
-        enumStyle: 'string-literal',
-        projectName:'blade'
+        enumStyle: "string-literal",
+        projectName: "blade",
+        serversPath: path.join(rootPath,"src","service"),
+        // templatesFolder: path.join(materialsPath, "openapi")
+        templatesFolder: path.join(context.extensionPath,"materials","blocks", "openapi")
         // nullable,
         // ...rest,
-      } as Config
+      };
 
       try {
         var openAPIData = await getOpenAPIConfig(
@@ -212,11 +91,9 @@ export default (context: vscode.ExtensionContext) => {
         );
         console.log("openAPIData", openAPIData);
 
-        const basePath = "";
-        const apiData = genApiData(openAPIData, basePath);
+        const serviceGenerator = new ServiceGenerator(config, openAPIData);
 
-        genFile(apiData, basePath, config);
-        console.log("apiData", apiData);
+        serviceGenerator.genFile();
       } catch (error) {
         console.log("error", error);
       }
