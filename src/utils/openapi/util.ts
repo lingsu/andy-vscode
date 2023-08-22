@@ -9,7 +9,7 @@ import * as fs from "fs-extra";
 import { camelCase, upperFirst } from 'lodash';
 
 // const { prettier: defaultPrettierOptions } = require('@umijs/fabric');
-// import * as prettier from "prettier";
+import * as prettier from "prettier";
 
 export const getAbsolutePath = (filePath: string) => {
   if (filePath && !path.isAbsolute(filePath)) {
@@ -25,12 +25,12 @@ export const mkdir = (dir: string) => {
   }
 };
 
-export const prettierFile = (content: string): [string, boolean] => {
+export const prettierFile = async (content: string): Promise<[string, boolean]> => {
   let result = content;
   let hasError = false;
   try {
-    const prettier = require('prettier');
-    result = prettier.format(content, {
+    // const prettier = require('prettier');
+    result = await prettier.format(content, {
       singleQuote: true,
       trailingComma: 'all',
       printWidth: 100,
@@ -43,11 +43,11 @@ export const prettierFile = (content: string): [string, boolean] => {
   return [result, hasError];
 };
 
-export const writeFile = (folderPath: string, fileName: string, content: string) => {
-  console.log('folderPath',folderPath, fileName, content)
+export const writeFile = async (folderPath: string, fileName: string, content: string): Promise<boolean> => {
+  // console.log('folderPath',folderPath, fileName, content)
   const filePath = path.join(folderPath, fileName);
   mkdir(path.dirname(filePath));
-  const [prettierContent, hasError] = prettierFile(content);
+  const [prettierContent, hasError] = await prettierFile(content);
   fs.writeFileSync(filePath, prettierContent, {
     encoding: 'utf8',
   });
