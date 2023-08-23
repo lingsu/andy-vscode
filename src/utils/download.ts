@@ -22,7 +22,7 @@ export const download = async (
   //   fs.unlink(filePath, () => reject(err));
   // });
 
-  new Promise((resolve, reject) => {
+ return new Promise((resolve, reject) => {
     fs.ensureDir(filePath)
       .then(() => {
         const file = fs.createWriteStream(path.join(filePath, fileName));
@@ -33,7 +33,9 @@ export const download = async (
           .then((response) => {
             response.data
               .pipe(file)
-              .on('finish', () => resolve(0))
+              .on('finish', () => {
+                resolve(0)
+              })
               .on('error', (err: any) => {
                 fs.unlink(filePath, () => reject(err));
               });

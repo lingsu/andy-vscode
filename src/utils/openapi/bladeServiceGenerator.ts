@@ -53,6 +53,7 @@ export const getPath = () => {
 
 // 类型声明过滤关键字
 const resolveTypeName = (typeName: string) => {
+  console.log('resolveTypeName',typeName)
   //   if (ReservedDict.check(typeName)) {
   //     return `__openAPI__${typeName}`;
   //   }
@@ -364,11 +365,14 @@ class ServiceGenerator {
       list: this.getInterfaceTP(),
       disableTypeCheck: false,
     });
+    Log(`✅ 成功生成 typings.d.ts 文件`);
+
     // 生成 controller 文件
     const prettierError: boolean[] = [];
     // 生成 service 统计
     this.getServiceTP().forEach(async (tp) => {
       // 根据当前数据源类型选择恰当的 controller 模版
+      console.log('getServiceTP',tp)
       const template = "serviceController";
       const hasError = await this.genFileFromTemplate(
         this.getFinalFileName(`${tp.className}.ts`),
@@ -727,25 +731,39 @@ class ServiceGenerator {
     let schema = (resContent[mediaType].schema ||
       DEFAULT_SCHEMA) as SchemaObject;
 
-    if (schema.$ref) {
-      const refPaths = schema.$ref.split("/");
-      const refName = refPaths[refPaths.length - 1];
-      const childrenSchema = components.schemas[refName] as SchemaObject;
-      if (
-        childrenSchema?.type === "object" &&
-        "properties" in childrenSchema &&
-        this.config.dataFields
-      ) {
-        var dataFieldFiltered = this.config.dataFields
-          .map((field) => childrenSchema.properties[field])
-          .filter(Boolean);
-        schema =
-          dataFieldFiltered[0] ||
-          resContent[mediaType].schema ||
-          DEFAULT_SCHEMA;
+      var deep = 2;
+    while (deep > 0) {
+      if (schema.$ref) {
+        const refPaths = schema.$ref.split("/");
+        const refName = refPaths[refPaths.length - 1];
+        const childrenSchema = components.schemas[refName] as SchemaObject;
+        if (
+          childrenSchema?.type === "object" &&
+          "properties" in childrenSchema &&
+          this.config.dataFields
+        ) {
+          console.log("childrenSchema", JSON.stringify(schema), childrenSchema);
+          var dataFieldFiltered = this.config.dataFields
+            .map((field) => childrenSchema.properties[field])
+            .filter(Boolean);
+          schema =
+            dataFieldFiltered[0] ||
+            resContent[mediaType].schema ||
+            DEFAULT_SCHEMA;
+
+          console.log("childrenSchema filtered", JSON.stringify(schema));
+          if (dataFieldFiltered.length === 0) {
+            break;
+          }
+        } else {
+          break;
+        }
+      } else {
+        break;
       }
+      deep--;
     }
-    
+
     if ("properties" in schema) {
       Object.keys(schema.properties).map((fieldName) => {
         // eslint-disable-next-line @typescript-eslint/dot-notation
@@ -823,10 +841,17 @@ class ServiceGenerator {
         if (!defines) {
           return null;
         }
+        // const types: {
+        //   typeName: string,
+        //     type: string[],
+        //     parent: string,
+        //     props: any[],
+        //     isEnum: boolean,
+        // }[] = [];
 
         return Object.keys(defines).map((typeName) => {
           const result = this.resolveObject(defines[typeName]);
-
+          
           const getDefinesType = () => {
             if (result.type) {
               return (
@@ -898,7 +923,7 @@ class ServiceGenerator {
       });
     });
     // ---- 生成 xxxparams 类型 end---------
-
+    console.log('data',data)
     return (
       data &&
       data

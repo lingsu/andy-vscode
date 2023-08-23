@@ -20,6 +20,10 @@
 				"title": "Hello World"
 			},
 			{
+				"command": "andy-tool.initconfig",
+				"title": "[init]生成andy插件配置"
+			},
+			{
 				"command": "andy-tool.openapi",
 				"title": "根据 OpenApi3 文档生成 request 请求代码。"
 			},
@@ -111,7 +115,6 @@
 	},
 	"dependencies": {
 		"@babel/parser": "^7.22.10",
-		"@umijs/openapi": "^1.8.5",
 		"acorn": "^8.10.0",
 		"acorn-jsx": "^5.3.2",
 		"axios": "^1.4.0",

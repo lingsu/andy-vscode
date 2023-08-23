@@ -41,7 +41,7 @@ export type GenerateServiceProps = {
   /**
    * 项目名称
    */
-  projectName: string;
+  projectName?: string;
 
   hook?: {
     /** 自定义函数名称 */

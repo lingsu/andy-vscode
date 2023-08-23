@@ -11,6 +11,7 @@ import { getOutputChannel } from "./utils/outputChannel";
 import { getRemote } from "./utils/configuration";
 import openapi from "./commands/openapi";
 import helloworld from "./commands/helloworld";
+import initConfig from "./commands/initConfig";
 
 const channel = getOutputChannel();
 
@@ -31,13 +32,9 @@ export function activate(context: vscode.ExtensionContext) {
   // Now provide the implementation of the command with registerCommand
   // The commandId parameter must match the command field in package.json
 
-  fs.ensureDir(tempWorkPath).then(async () => {
-    var exists = await fs.exists(path.join(tempWorkPath, ".gitignore"));
-    if (exists === false) {
-      await fs.writeFile(path.join(tempWorkPath, ".gitignore"), `*`);
-    }
-  });
  
+ 
+  initConfig(context);
   helloworld(context);
   reactrouter(context);
   openapi(context);
