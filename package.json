@@ -21,11 +21,15 @@
 			},
 			{
 				"command": "andy-tool.initconfig",
-				"title": "[init]生成andy插件配置"
+				"title": "生成andy插件配置[initandy]"
 			},
 			{
 				"command": "andy-tool.openapi",
-				"title": "根据 OpenApi3 文档生成 request 请求代码。"
+				"title": "根据 OpenApi3 文档生成 request 请求代码"
+			},
+			{
+				"command": "andy-tool.openapiList",
+				"title": "根据 OpenApi3 文档生成 List 页面"
 			},
 			{
 				"command": "andy-tool.reactrouter",
@@ -64,7 +68,7 @@
 			],
 			"andy/explorer/context": [
 				{
-					"command": "andy-tool.helloWorld",
+					"command": "andy-tool.openapiList",
 					"group": "andy@1"
 				}
 			]

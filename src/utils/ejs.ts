@@ -4,6 +4,9 @@ import * as path from "path";
 import * as glob from "glob";
 import * as prettier from "prettier";
 
+export const compile = (templateString: string, model: any) =>
+  ejs.render(templateString, model);
+
 export async function renderFile(templateFilepath: string, data: ejs.Data) {
   let content = await ejs.renderFile(templateFilepath, data);
   const targetFilePath = templateFilepath

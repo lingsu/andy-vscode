@@ -1,6 +1,8 @@
-// import * as path from 'path';
-// import * as vscode from 'vscode';
-// import * as fs from 'fs-extra';
+import * as path from "path";
+import * as vscode from "vscode";
+import * as fs from "fs-extra";
+import { getFileContent, writeFile } from "./file";
+import { compile } from "./ejs";
 // import {
 //   blockMaterialsPath,
 //   getEnv,
@@ -69,4 +71,14 @@
 //     const newCode = await hook.afterCompile(context);
 //     pasteToEditor(newCode || code);
 //   };
-  
+
+export const genCodeByFile = async (
+  model: any,
+  tempWorkPath: string,
+  createPath: string
+) => {
+  const template = getFileContent(tempWorkPath, true);
+
+  const code = compile(template, model);
+  await writeFile(code, createPath);
+};

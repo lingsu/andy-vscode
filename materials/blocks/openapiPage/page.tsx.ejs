@@ -1,0 +1,56 @@
+import {
+  PageContainer,
+  ProColumns,
+  ProTable,
+} from "@ant-design/pro-components";
+//import { Link } from "react-router-dom";
+import { BroadHeading } from "../../../typing";
+import useProTable from "../../../hooks/useProTable";
+import { css } from "@emotion/css";
+
+const columns: ProColumns<BroadHeading>[] = [
+  {
+    title: "项目编码",
+    dataIndex: "number",
+  },
+  {
+    title: "操作",
+    valueType: "option",
+    key: "option",
+    width: 100,
+    render: (_, record) => [
+      // <a
+      //   key="editable"
+      //   onClick={() => {
+      //     action?.startEditable?.(record.id);
+      //   }}
+      // >
+      //   编辑
+      // </a>,
+      // <Link to={record.name} rel="noopener noreferrer" key="view">
+      //   查看
+      // </Link>,
+      // <TableDropdown
+      //   key="actionGroup"
+      //   onSelect={() => action?.reload()}
+      //   menus={[
+      //     { key: "copy", name: "复制" },
+      //     { key: "delete", name: "删除" },
+      //   ]}
+      // />,
+    ],
+  },
+];
+
+export default () => {
+  const [tableProps] = useProTable({
+    url: "/excel/getBroadHeadingList",
+    columns: columns,
+    //scroll: { x: 1500 },
+    rowKey: "number",
+  });
+
+  return (
+    <ProTable {...tableProps} />
+  );
+};

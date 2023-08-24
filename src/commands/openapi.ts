@@ -2,48 +2,22 @@ import * as vscode from "vscode";
 import * as path from "path";
 
 import { rootPath, tempWorkPath } from "../utils/vscodeEnv";
-import { getFileContent, writeFile } from "../utils/file";
-import { download } from "../utils/download";
+import { writeFile } from "../utils/file";
 import * as _ from "lodash";
 
 import Log from "../utils/log";
 import { ServiceGenerator } from "../utils/openapi/serviceGenerator";
 import { GenerateServiceProps } from "../utils/openapi/typing";
 import { getConfig } from "../utils/config";
-
-const converterSwaggerToOpenApi = (swagger: any) => {
-  console.log("swagger", swagger);
-  if (!swagger.swagger) {
-    return swagger;
-  }
-  return new Promise((resolve, reject) => {
-    const converter = require("swagger2openapi");
-
-    converter.convertObj(swagger, {}, (err: any, options: any) => {
-      Log(["💺 将 Swagger 转化为 openAPI"]);
-      if (err) {
-        reject(err);
-        return;
-      }
-      resolve(options.openapi);
-    });
-  });
-};
-const getOpenAPIConfig = async (schemaPath: string) => {
-  const schema = await getSchema(schemaPath);
-  if (!schema) {
-    return null;
-  }
-  const openAPI = await converterSwaggerToOpenApi(schema);
-
-  return openAPI;
-};
-const getSchema = async (schemaPath: string) => {
-  await download(schemaPath, tempWorkPath, "swagger.json");
-  return JSON.parse(
-    getFileContent(path.join(tempWorkPath, "swagger.json"), true) || "{}"
-  );
-};
+import getOpenAPIConfig from "../utils/openapi/getOpenAPIConfig";
+import {
+  ContentObject,
+  OperationObject,
+  PathItemObject,
+  ReferenceObject,
+  SchemaObject,
+} from "openapi3-ts/oas30";
+import { genCodeByFile } from "../utils/generate";
 
 const run = async (config: GenerateServiceProps) => {
   config = {
@@ -62,12 +36,14 @@ const run = async (config: GenerateServiceProps) => {
   try {
     var openAPIData = await getOpenAPIConfig(
       // "http://petstore.swagger.io/v2/swagger.json"
-      config.schemaPath!
+      config.schemaPath!,
+      config.projectName!,
+      true
     );
-    console.log("openAPIData", openAPIData);
+    // console.log("openAPIData", openAPIData);
     await writeFile(
       JSON.stringify(openAPIData),
-      path.join(tempWorkPath, "openAPIData.json")
+      path.join(tempWorkPath, config.projectName + ".json")
     );
 
     const serviceGenerator = new ServiceGenerator(config, openAPIData);
@@ -76,50 +52,141 @@ const run = async (config: GenerateServiceProps) => {
 
     vscode.window.showInformationMessage("生成完成");
   } catch (error: any) {
-    Log(error.message)
+    Log(error.message);
     vscode.window.showErrorMessage(error.message);
     // Log(``+error)
   }
 };
+
+const getProjectName = async (openApi: GenerateServiceProps[]) => {
+  if (openApi.length < 1) {
+    vscode.window.showWarningMessage("未配置OpenApi", {
+      modal: true,
+    });
+    return;
+  }
+  var projectName: undefined | string = "";
+  if (openApi.length > 1) {
+    projectName = await vscode.window.showQuickPick(
+      openApi.map((x) => x.projectName!),
+      {
+        placeHolder: "请选择OpenApi",
+      }
+    );
+    if (!projectName) {
+      return;
+    }
+  } else {
+    projectName = openApi[0].projectName;
+  }
+
+  return projectName;
+};
+
 export default (context: vscode.ExtensionContext) => {
-  let disposable = vscode.commands.registerCommand(
+  let openapi = vscode.commands.registerCommand(
     "andy-tool.openapi",
     async () => {
       var config = getConfig();
       var openApi = config.openApi || [];
-      if (openApi.length < 1) {
-        vscode.window.showWarningMessage('未配置OpenApi', {
+
+      var projectName = await getProjectName(openApi);
+      if (projectName) {
+        await run({
+          ...openApi.find((x) => x.projectName == projectName),
+          templatesFolder: path.join(
+            context.extensionPath,
+            "materials",
+            "blocks",
+            "openapi"
+          ),
+        });
+      }
+    }
+  );
+  context.subscriptions.push(openapi);
+
+  let openapiList = vscode.commands.registerCommand(
+    "andy-tool.openapiList",
+    async (args) => {
+      console.log('args',args)
+      var config = getConfig();
+      var openApis = config.openApis || [];
+      if (openApis.length < 1) {
+        vscode.window.showWarningMessage("未配置OpenApi", {
           modal: true,
         });
         return;
       }
-      var projectName : undefined | string = '';
-      if (openApi.length > 1) {
-        projectName = await vscode.window.showQuickPick(openApi.map(x=>x.projectName!), {
-          placeHolder: '请选择OpenApi',
+
+      var allPaths: Record<string, any> = {};
+
+      for (const openApiConfig of openApis) {
+        var openAPIData = await getOpenAPIConfig(
+          // "http://petstore.swagger.io/v2/swagger.json"
+          openApiConfig.schemaPath!,
+          openApiConfig.projectName!
+        );
+        const { components } = openAPIData;
+
+        // allPaths = [...allPaths, ...]
+
+        Object.keys(openAPIData.paths || {}).forEach((p) => {
+          // allPaths[p] = openAPIData.paths[p];
+          const pathItem: PathItemObject = openAPIData.paths[p];
+
+          ["get", "put", "post", "delete", "patch"].forEach((method) => {
+            const operationObject: OperationObject = pathItem[method];
+            if (!operationObject) {
+              return;
+            }
+
+            var ref = operationObject.responses?.["200"]?.content?.['*/*']?.schema?.$ref;
+            // if (!response) {
+            //   return;
+            // }
+            // const resContent: ContentObject | undefined = response.content;
+            // const mediaType = Object.keys(resContent || {})[0];
+            // if (typeof resContent !== "object" || !mediaType) {
+            //   return;
+            // }
+            // let schema = resContent[mediaType].schema as ReferenceObject;
+
+            if (!ref) {
+              return;
+            }
+            const refPaths = ref.split("/");
+            const refName = refPaths[refPaths.length - 1];
+            const childrenSchema = components.schemas[refName] as SchemaObject;
+            if (childrenSchema.title?.includes('Page«')) {
+              allPaths[p] = {
+                path: p,
+                method,
+                ...operationObject,
+              };
+            }
+          });
         });
-        if (!projectName) {
-          return;
-        }
-      }else{
-        projectName = openApi[0].projectName;
       }
 
-      await run({
-        ...openApi.find(x=>x.projectName == projectName),
-        templatesFolder: path.join(
-          context.extensionPath,
-          "materials",
-          "blocks",
-          "openapi"
-        ),
+      var pathName = await vscode.window.showQuickPick(Object.keys(allPaths), {
+        placeHolder: "请选择接口",
       });
+      if (!pathName) {
+        return;
+      }
 
-      // generateService({
-      //   schemaPath: "http://petstore.swagger.io/v2/swagger.json",
-      //   serversPath: path.join(rootPath, "src", "servers"),
-      // });
+      let selectedPath = allPaths[pathName];
+      console.log('selected' ,selectedPath)
+
+      await genCodeByFile(selectedPath,path.join(
+        context.extensionPath,
+        "materials",
+        "blocks",
+        "openapiPage",
+        "page.tsx.ejs"
+      ), path.join(rootPath, "components", selectedPath.operationId + ".tsx"))
     }
   );
-  context.subscriptions.push(disposable);
+  context.subscriptions.push(openapiList);
 };

@@ -5,7 +5,7 @@ import { rootPath } from "./vscodeEnv";
 import { GenerateServiceProps } from "./openapi/typing";
 
 const defaultConfig: Config = {
-  openApi: [
+  openApis: [
     {
       schemaPath: "",
       namespace: "API",
@@ -22,7 +22,7 @@ const defaultConfig: Config = {
 };
 
 export type Config = {
-  openApi?: GenerateServiceProps[];
+  openApis?: GenerateServiceProps[];
 };
 
 export const getConfig: () => Config = () => {
