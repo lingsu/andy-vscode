@@ -111,6 +111,7 @@ export default (context: vscode.ExtensionContext) => {
     "andy-tool.openapiList",
     async (args) => {
       console.log("args", args);
+
       var config = getConfig();
       var openApis = config.openApis || [];
       if (openApis.length < 1) {
@@ -119,7 +120,6 @@ export default (context: vscode.ExtensionContext) => {
         });
         return;
       }
-      getOutputChannel().show();
 
       var allPaths: Record<string, any> = {};
 
@@ -207,6 +207,7 @@ export default (context: vscode.ExtensionContext) => {
       if (!pathName) {
         return;
       }
+      getOutputChannel().show();
 
       let selectedPath = allPaths[pathName];
       console.log("selected", selectedPath);
@@ -215,6 +216,19 @@ export default (context: vscode.ExtensionContext) => {
         Log(`${selectedPath.schema.title}未设置key`);
       }
 
+      // const instanceName: string = selectedPath.operationId.replace(
+      //   /Using\w+/g,
+      //   ""
+      // )
+      // .replace(
+      //   /get/g,
+      //   ""
+      // );
+      // const fileName = `${instanceName[0].toUpperCase()}${instanceName.substring(
+      //   1
+      // )}.tsx`;
+
+      const fileName = `${selectedPath.schema.title}List.tsx`;
       await genCodeByFile(
         {
           openApi: selectedPath,
@@ -227,8 +241,9 @@ export default (context: vscode.ExtensionContext) => {
           "openapiPage",
           "page.tsx.ejs"
         ),
-        path.join(componentsPath, selectedPath.operationId + ".tsx")
+        path.join(componentsPath, fileName)
       );
+      Log(`✅ 成功生成 ${fileName} 文件`);
     }
   );
   context.subscriptions.push(openapiList);
