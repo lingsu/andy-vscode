@@ -12,7 +12,7 @@ import { getConfig } from "../utils/config";
 import getOpenAPIConfig from "../utils/openapi/getOpenAPIConfig";
 import { genCodeByFile } from "../utils/generate";
 import { getOutputChannel } from "../utils/outputChannel";
-import { getPagePaths } from "../utils/openapi/bladeServiceGenerator";
+import { getDetailPaths, getPagePaths } from "../utils/openapi/bladeServiceGenerator";
 import { formatPath } from "../utils/platform";
 
 const run = async (config: GenerateServiceProps) => {
@@ -182,7 +182,7 @@ export default (context: vscode.ExtensionContext) => {
         return;
       }
 
-      var allPaths = await getPagePaths(openApis);
+      var allPaths = await getDetailPaths(openApis);
 
       var pathName = await vscode.window.showQuickPick(Object.keys(allPaths), {
         placeHolder: "请选择接口",
@@ -222,7 +222,7 @@ export default (context: vscode.ExtensionContext) => {
           "materials",
           "blocks",
           "openapiPage",
-          "page.tsx.ejs"
+          "detail.tsx.ejs"
         ),
         path.join(formatPath(args?.path || componentsPath), fileName)
       );

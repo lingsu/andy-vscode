@@ -32,6 +32,10 @@
 				"title": "根据 OpenApi3 文档生成 Page 页面"
 			},
 			{
+				"command": "andy-tool.openapiDetail",
+				"title": "根据 OpenApi3 文档生成 Detail 页面"
+			},
+			{
 				"command": "andy-tool.reactrouter",
 				"title": "生成React Router路由"
 			}
@@ -69,6 +73,10 @@
 			"andy/explorer/context": [
 				{
 					"command": "andy-tool.openapiPage",
+					"group": "andy@1"
+				},
+				{
+					"command": "andy-tool.openapiDetail",
 					"group": "andy@1"
 				}
 			]

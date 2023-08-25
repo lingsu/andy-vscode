@@ -37,6 +37,11 @@ const getProps = (schemaObject: SchemaObject) => {
 export const getPagePaths = (openApis: GenerateServiceProps[]) =>
   getAllPaths(openApis, (schema) => schema.title!.includes("Page«"));
 
+
+  export const getDetailPaths = (openApis: GenerateServiceProps[]) =>
+  getAllPaths(openApis, (schema) => !schema.title!.includes("Page«") && !schema.title!.includes("List«"));
+
+
 const getAllPaths = async (
   openApis: GenerateServiceProps[],
   schemaFilter: (schema: SchemaObject) => boolean
