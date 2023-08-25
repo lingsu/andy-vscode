@@ -11,8 +11,8 @@ const columns: ProColumns<<%=(config.namespace ? config.namespace + ".": "") %><
   <% openApi.parameters.forEach((c, i) => {
     %>
     {
-      title: "<%=c.name %>",
-      dataIndex: "<%=c.description %>",
+      title: "<%=c.description %>",
+      dataIndex: "<%=c.name %>",
     },
     <%});%>
    //{
