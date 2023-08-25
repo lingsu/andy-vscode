@@ -102,8 +102,8 @@ export default (context: vscode.ExtensionContext) => {
   );
   context.subscriptions.push(openapi);
 
-  let openapiList = vscode.commands.registerCommand(
-    "andy-tool.openapiList",
+  let openapiPage = vscode.commands.registerCommand(
+    "andy-tool.openapiPage",
     async (args) => {
       console.log("args", args);
 
@@ -163,5 +163,71 @@ export default (context: vscode.ExtensionContext) => {
       Log(`✅ 成功生成 ${fileName} 文件`);
     }
   );
-  context.subscriptions.push(openapiList);
+  context.subscriptions.push(openapiPage);
+
+
+
+  
+  let openapiDetail = vscode.commands.registerCommand(
+    "andy-tool.openapiDetail",
+    async (args) => {
+      console.log("args", args);
+
+      var config = getConfig();
+      var openApis = config.openApis || [];
+      if (openApis.length < 1) {
+        vscode.window.showWarningMessage("未配置OpenApi", {
+          modal: true,
+        });
+        return;
+      }
+
+      var allPaths = await getPagePaths(openApis);
+
+      var pathName = await vscode.window.showQuickPick(Object.keys(allPaths), {
+        placeHolder: "请选择接口",
+      });
+      if (!pathName) {
+        return;
+      }
+      getOutputChannel().show();
+
+      let selectedPath = allPaths[pathName];
+      Log(JSON.stringify(selectedPath));
+
+      if (!selectedPath.rowKey) {
+        Log(`${selectedPath.schema.title}未设置rowKey`);
+      }
+
+      // const instanceName: string = selectedPath.operationId.replace(
+      //   /Using\w+/g,
+      //   ""
+      // )
+      // .replace(
+      //   /get/g,
+      //   ""
+      // );
+      // const fileName = `${instanceName[0].toUpperCase()}${instanceName.substring(
+      //   1
+      // )}.tsx`;
+
+      const fileName = `${selectedPath.schema.title}Page.tsx`;
+      await genCodeByFile(
+        {
+          openApi: selectedPath,
+          config: selectedPath.config,
+        },
+        path.join(
+          context.extensionPath,
+          "materials",
+          "blocks",
+          "openapiPage",
+          "page.tsx.ejs"
+        ),
+        path.join(formatPath(args?.path || componentsPath), fileName)
+      );
+      Log(`✅ 成功生成 ${fileName} 文件`);
+    }
+  );
+  context.subscriptions.push(openapiDetail);
 };

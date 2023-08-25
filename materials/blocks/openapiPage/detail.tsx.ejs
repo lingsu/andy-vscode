@@ -1,0 +1,17 @@
+import {
+} from "@ant-design/pro-components";
+
+export default ({data}: {data:<%=(config.namespace ? config.namespace + ".": "") %><%=openApi.schema.title %>}) => {
+
+  return (
+    <ProDescriptions column={3}>
+      <% openApi.props.forEach((c, i) => {
+        %>
+        <ProDescriptions.Item label="<%=c.description %>">
+          {data.<%=c.name %>}
+        </ProDescriptions.Item>
+
+        <%});%>
+    </ProDescriptions>
+  );
+};
