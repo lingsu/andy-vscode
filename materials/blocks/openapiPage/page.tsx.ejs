@@ -6,7 +6,7 @@ import {
 import useProTable from '../hooks/useProTable';
 //import { css } from "@emotion/css";
 
-const columns: ProColumns<<%=config.namespace %>.<%=openApi.schema.title %>>[] = [
+const columns: ProColumns<<%=(config.namespace ? config.namespace + ".": "") %><%=openApi.schema.title %>>[] = [
  
   <% openApi.parameters.forEach((c, i) => {
     %>
