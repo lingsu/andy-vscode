@@ -145,7 +145,7 @@ export default (context: vscode.ExtensionContext) => {
       //   1
       // )}.tsx`;
 
-      const fileName = `${selectedPath.schema.title}List.tsx`;
+      const fileName = `${selectedPath.schema.title}Page.tsx`;
       await genCodeByFile(
         {
           openApi: selectedPath,

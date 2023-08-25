@@ -28,8 +28,8 @@
 				"title": "根据 OpenApi3 文档生成 request 请求代码"
 			},
 			{
-				"command": "andy-tool.openapiList",
-				"title": "根据 OpenApi3 文档生成 List 页面"
+				"command": "andy-tool.openapiPage",
+				"title": "根据 OpenApi3 文档生成 Page 页面"
 			},
 			{
 				"command": "andy-tool.reactrouter",
@@ -68,7 +68,7 @@
 			],
 			"andy/explorer/context": [
 				{
-					"command": "andy-tool.openapiList",
+					"command": "andy-tool.openapiPage",
 					"group": "andy@1"
 				}
 			]
