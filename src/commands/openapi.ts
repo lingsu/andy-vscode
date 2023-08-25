@@ -13,6 +13,7 @@ import getOpenAPIConfig from "../utils/openapi/getOpenAPIConfig";
 import { genCodeByFile } from "../utils/generate";
 import { getOutputChannel } from "../utils/outputChannel";
 import { getPagePaths } from "../utils/openapi/bladeServiceGenerator";
+import { formatPath } from "../utils/platform";
 
 const run = async (config: GenerateServiceProps) => {
   config = {
@@ -157,7 +158,7 @@ export default (context: vscode.ExtensionContext) => {
           "openapiPage",
           "page.tsx.ejs"
         ),
-        path.join(componentsPath, fileName)
+        path.join(formatPath(args?.path || componentsPath), fileName)
       );
       Log(`✅ 成功生成 ${fileName} 文件`);
     }
