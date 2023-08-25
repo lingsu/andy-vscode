@@ -8,7 +8,7 @@ import useProTable from '../hooks/useProTable';
 
 const columns: ProColumns<<%=(config.namespace ? config.namespace + ".": "") %><%=openApi.schema.title %>>[] = [
  
-  <% openApi.parameters.forEach((c, i) => {
+  <% openApi.props.forEach((c, i) => {
     %>
     {
       title: "<%=c.description %>",
