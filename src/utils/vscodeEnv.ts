@@ -7,6 +7,9 @@ import * as os from 'os';
 export const rootPath = path.join(
   vscode.workspace.workspaceFolders![0].uri.fsPath || ""
 );
+export const componentsPath = path.join(
+  path.join(rootPath,"src" , "components")
+);
 
 export const tempWorkPath = path.join(rootPath, '.andy');
 

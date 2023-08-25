@@ -1,24 +1,26 @@
 import {
-  PageContainer,
   ProColumns,
   ProTable,
 } from "@ant-design/pro-components";
 //import { Link } from "react-router-dom";
-import { BroadHeading } from "../../../typing";
-import useProTable from "../../../hooks/useProTable";
-import { css } from "@emotion/css";
+import useProTable from '../hooks/useProTable';
+//import { css } from "@emotion/css";
 
-const columns: ProColumns<BroadHeading>[] = [
-  {
-    title: "项目编码",
-    dataIndex: "number",
-  },
-  {
-    title: "操作",
-    valueType: "option",
-    key: "option",
-    width: 100,
-    render: (_, record) => [
+const columns: ProColumns<<%=config.namespace %>.<%=openApi.schema.title %>>[] = [
+ 
+  <% openApi.parameters.forEach((c, i) => {
+    %>
+    {
+      title: "<%=c.name %>",
+      dataIndex: "<%=c.description %>",
+    },
+    <%});%>
+   //{
+    //title: '操作',
+    //valueType: 'option',
+    //key: 'option',
+    //width: 100,
+    //render: (_, record) => [
       // <a
       //   key="editable"
       //   onClick={() => {
@@ -38,16 +40,18 @@ const columns: ProColumns<BroadHeading>[] = [
       //     { key: "delete", name: "删除" },
       //   ]}
       // />,
-    ],
-  },
+    //,
+  //},
 ];
 
 export default () => {
   const [tableProps] = useProTable({
-    url: "/excel/getBroadHeadingList",
+    url: "<%=openApi.path %>",
     columns: columns,
-    //scroll: { x: 1500 },
-    rowKey: "number",
+    <% if (openApi.rowKey) { %>
+     rowKey: "<%= openApi.rowKey %>",
+<% } %>
+   
   });
 
   return (

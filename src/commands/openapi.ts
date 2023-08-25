@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
 
-import { rootPath, tempWorkPath } from "../utils/vscodeEnv";
+import { componentsPath, rootPath, tempWorkPath } from "../utils/vscodeEnv";
 import { writeFile } from "../utils/file";
 import * as _ from "lodash";
 
@@ -18,6 +18,7 @@ import {
   SchemaObject,
 } from "openapi3-ts/oas30";
 import { genCodeByFile } from "../utils/generate";
+import { getOutputChannel } from "../utils/outputChannel";
 
 const run = async (config: GenerateServiceProps) => {
   config = {
@@ -109,7 +110,7 @@ export default (context: vscode.ExtensionContext) => {
   let openapiList = vscode.commands.registerCommand(
     "andy-tool.openapiList",
     async (args) => {
-      console.log('args',args)
+      console.log("args", args);
       var config = getConfig();
       var openApis = config.openApis || [];
       if (openApis.length < 1) {
@@ -118,6 +119,7 @@ export default (context: vscode.ExtensionContext) => {
         });
         return;
       }
+      getOutputChannel().show();
 
       var allPaths: Record<string, any> = {};
 
@@ -141,7 +143,9 @@ export default (context: vscode.ExtensionContext) => {
               return;
             }
 
-            var ref = operationObject.responses?.["200"]?.content?.['*/*']?.schema?.$ref;
+            var ref =
+              operationObject.responses?.["200"]?.content?.["*/*"]?.schema
+                ?.$ref;
             // if (!response) {
             //   return;
             // }
@@ -157,11 +161,39 @@ export default (context: vscode.ExtensionContext) => {
             }
             const refPaths = ref.split("/");
             const refName = refPaths[refPaths.length - 1];
-            const childrenSchema = components.schemas[refName] as SchemaObject;
-            if (childrenSchema.title?.includes('Page«')) {
+            let childrenSchema = components.schemas[refName] as SchemaObject;
+            if (childrenSchema.title?.includes("Page«")) {
+              while (true) {
+                var node: any = ["data", "records"]
+                  .map((it) => childrenSchema.properties![it])
+                  .filter(Boolean)?.[0];
+                if (!node) {
+                  break;
+                }
+                var ref = node.$ref || node.items?.$ref;
+                if (!ref) {
+                  break;
+                }
+
+                childrenSchema = components.schemas[ref.split("/").pop()!];
+              }
+
+              var rowKey: any = Object.keys(
+                childrenSchema.properties || {}
+              ).filter(
+                (it) =>
+                  it === "id" ||
+                  (
+                    childrenSchema.properties![it] as SchemaObject
+                  ).description?.includes("主键")
+              )[0];
+
               allPaths[p] = {
                 path: p,
                 method,
+                rowKey: rowKey,
+                config: openApiConfig,
+                schema: childrenSchema,
                 ...operationObject,
               };
             }
@@ -177,15 +209,26 @@ export default (context: vscode.ExtensionContext) => {
       }
 
       let selectedPath = allPaths[pathName];
-      console.log('selected' ,selectedPath)
+      console.log("selected", selectedPath);
 
-      await genCodeByFile(selectedPath,path.join(
-        context.extensionPath,
-        "materials",
-        "blocks",
-        "openapiPage",
-        "page.tsx.ejs"
-      ), path.join(rootPath, "components", selectedPath.operationId + ".tsx"))
+      if (!selectedPath.rowKey) {
+        Log(`${selectedPath.schema.title}未设置key`);
+      }
+
+      await genCodeByFile(
+        {
+          openApi: selectedPath,
+          config: selectedPath.config,
+        },
+        path.join(
+          context.extensionPath,
+          "materials",
+          "blocks",
+          "openapiPage",
+          "page.tsx.ejs"
+        ),
+        path.join(componentsPath, selectedPath.operationId + ".tsx")
+      );
     }
   );
   context.subscriptions.push(openapiList);
