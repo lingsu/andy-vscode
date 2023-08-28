@@ -1136,7 +1136,7 @@ class ServiceGenerator {
       .replace(/[-_ ](\w)/g, (_all, letter) => letter.toUpperCase());
   }
 
-  private resolveFunctionName(functionName: string, methodName) {
+  private resolveFunctionName(functionName: string, methodName: string) {
     // 类型声明过滤关键字
     // if (ReservedDict.check(functionName)) {
     //   return `${functionName}Using${methodName.toUpperCase()}`;
