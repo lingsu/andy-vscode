@@ -10,9 +10,13 @@ import { ServiceGenerator } from "../utils/openapi/serviceGenerator";
 import { GenerateServiceProps } from "../utils/openapi/typing";
 import { getConfig } from "../utils/config";
 import getOpenAPIConfig from "../utils/openapi/getOpenAPIConfig";
-import { genCodeByFile } from "../utils/generate";
+import { genCodeByFile, genCodeBySnippet } from "../utils/generate";
 import { getOutputChannel } from "../utils/outputChannel";
-import { getDetailPaths, getPagePaths } from "../utils/openapi/bladeServiceGenerator";
+import {
+  getDetailPaths,
+  getPagePaths,
+  getSchemas,
+} from "../utils/openapi/bladeServiceGenerator";
 import { formatPath } from "../utils/platform";
 
 const run = async (config: GenerateServiceProps) => {
@@ -165,9 +169,6 @@ export default (context: vscode.ExtensionContext) => {
   );
   context.subscriptions.push(openapiPage);
 
-
-
-  
   let openapiDetail = vscode.commands.registerCommand(
     "andy-tool.openapiDetail",
     async (args) => {
@@ -230,4 +231,104 @@ export default (context: vscode.ExtensionContext) => {
     }
   );
   context.subscriptions.push(openapiDetail);
+
+  let openapiDetailFromSchemas = vscode.commands.registerCommand(
+    "andy-tool.openapiDetailFromSchemas",
+    async (args) => {
+      console.log("args", args);
+
+      var config = getConfig();
+      var openApis = config.openApis || [];
+      if (openApis.length < 1) {
+        vscode.window.showWarningMessage("未配置OpenApi", {
+          modal: true,
+        });
+        return;
+      }
+
+      var allPaths = await getSchemas(openApis);
+
+      var pathName = await vscode.window.showQuickPick(Object.keys(allPaths), {
+        placeHolder: "请选择接口",
+      });
+      if (!pathName) {
+        return;
+      }
+      getOutputChannel().show();
+
+      let selectedPath = allPaths[pathName];
+      Log(JSON.stringify(selectedPath));
+
+      if (!selectedPath.rowKey) {
+        Log(`${selectedPath.schema.title}未设置rowKey`);
+      }
+
+      const fileName = `${selectedPath.schema.title}Detail.tsx`;
+      await genCodeByFile(
+        {
+          openApi: selectedPath,
+          config: selectedPath.config,
+        },
+        path.join(
+          context.extensionPath,
+          "materials",
+          "blocks",
+          "openapiPage",
+          "detail.tsx.ejs"
+        ),
+        path.join(formatPath(args?.path || componentsPath), fileName)
+      );
+      Log(`✅ 成功生成 ${fileName} 文件`);
+    }
+  );
+  context.subscriptions.push(openapiDetailFromSchemas);
+
+  let openapiColumnsFromSchemas = vscode.commands.registerCommand(
+    "andy-tool.openapiColumnsFromSchemas",
+    async (args) => {
+      console.log("args", args);
+
+      var config = getConfig();
+      var openApis = config.openApis || [];
+      if (openApis.length < 1) {
+        vscode.window.showWarningMessage("未配置OpenApi", {
+          modal: true,
+        });
+        return;
+      }
+
+      var allPaths = await getSchemas(openApis);
+
+      var pathName = await vscode.window.showQuickPick(Object.keys(allPaths), {
+        placeHolder: "请选择接口",
+      });
+      if (!pathName) {
+        return;
+      }
+      getOutputChannel().show();
+
+      let selectedPath = allPaths[pathName];
+      Log(JSON.stringify(selectedPath));
+
+      if (!selectedPath.rowKey) {
+        Log(`${selectedPath.schema.title}未设置rowKey`);
+      }
+
+      await genCodeBySnippet(
+        {
+          openApi: selectedPath,
+          config: selectedPath.config,
+        },
+        path.join(
+          context.extensionPath,
+          "materials",
+          "blocks",
+          "openapiPage",
+          "proTableColumns.ejs"
+        )
+      );
+      Log(`✅ 成功生成 ${selectedPath.schema.title} 列定义`);
+    }
+  );
+  context.subscriptions.push(openapiColumnsFromSchemas);
 };

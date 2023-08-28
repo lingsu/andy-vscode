@@ -1,6 +1,7 @@
 import {
   OperationObject,
   PathItemObject,
+  ReferenceObject,
   SchemaObject,
 } from "openapi3-ts/oas30";
 import { GenerateServiceProps } from "./typing";
@@ -37,10 +38,12 @@ const getProps = (schemaObject: SchemaObject) => {
 export const getPagePaths = (openApis: GenerateServiceProps[]) =>
   getAllPaths(openApis, (schema) => schema.title!.includes("Page«"));
 
-
-  export const getDetailPaths = (openApis: GenerateServiceProps[]) =>
-  getAllPaths(openApis, (schema) => !schema.title!.includes("Page«") && !schema.title!.includes("List«"));
-
+export const getDetailPaths = (openApis: GenerateServiceProps[]) =>
+  getAllPaths(
+    openApis,
+    (schema) =>
+      !schema.title!.includes("Page«") && !schema.title!.includes("List«")
+  );
 
 const getAllPaths = async (
   openApis: GenerateServiceProps[],
@@ -122,6 +125,44 @@ const getAllPaths = async (
           };
         }
       });
+    });
+  }
+  return allPaths;
+};
+
+export const getSchemas = async (openApis: GenerateServiceProps[]) => {
+  var allPaths: Record<string, any> = {};
+
+  for (const openApiConfig of openApis) {
+    var openAPIData = await getOpenAPIConfig(
+      openApiConfig.schemaPath!,
+      openApiConfig.projectName!
+    );
+    const { components } = openAPIData;
+
+    // allPaths = [...allPaths, ...]
+
+    Object.keys(components.schemas || {}).forEach((p) => {
+      // allPaths[p] = openAPIData.paths[p];
+      const schema: SchemaObject = components.schemas[p];
+
+      // let childrenSchema = components.schemas[refName] as SchemaObject;
+      if(!schema?.title?.includes('«')){
+        var rowKey: any = Object.keys(schema.properties || {}).filter(
+          (it) =>
+            it === "id" ||
+            (schema.properties![it] as SchemaObject).description?.includes("主键")
+        )[0];
+  
+        var props = getProps(schema);
+        allPaths[`${p}@${openApiConfig.projectName}`] = {
+          props,
+          rowKey: rowKey,
+          config: openApiConfig,
+          schema: schema,
+          // ...operationObject,
+        };
+      }
     });
   }
   return allPaths;

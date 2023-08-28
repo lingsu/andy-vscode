@@ -25,19 +25,27 @@
 			},
 			{
 				"command": "andy-tool.openapi",
-				"title": "根据 OpenApi3 文档生成 request 请求代码"
+				"title": "OpenApi3 文档生成 request 请求代码"
 			},
 			{
 				"command": "andy-tool.openapiPage",
-				"title": "根据 OpenApi3 文档生成 Page 页面"
+				"title": "OpenApi3 文档生成 Page 页面"
 			},
 			{
 				"command": "andy-tool.openapiDetail",
-				"title": "根据 OpenApi3 文档生成 Detail 页面"
+				"title": "OpenApi3 文档生成 Detail 页面"
 			},
 			{
 				"command": "andy-tool.reactrouter",
 				"title": "生成React Router路由"
+			},
+			{
+				"command": "andy-tool.openapiDetailFromSchemas",
+				"title": "OpenApi3 Schemas 生成 Detail页面"
+			},
+			{
+				"command": "andy-tool.openapiColumnsFromSchemas",
+				"title": "OpenApi3 Schemas 生成 Columns 列定义"
 			}
 		],
 		"submenus": [
@@ -68,6 +76,10 @@
 				{
 					"command": "andy-tool.helloWorld",
 					"group": "andy@1"
+				},
+				{
+					"command": "andy-tool.openapiColumnsFromSchemas",
+					"group": "andy@1"
 				}
 			],
 			"andy/explorer/context": [
@@ -77,6 +89,10 @@
 				},
 				{
 					"command": "andy-tool.openapiDetail",
+					"group": "andy@1"
+				},
+				{
+					"command": "andy-tool.openapiDetailFromSchemas",
 					"group": "andy@1"
 				}
 			]
