@@ -19,7 +19,8 @@ const getProps = (schemaObject: SchemaObject) => {
   return schemaObject.properties
     ? Object.keys(schemaObject.properties).map((propName) => {
         const schema: SchemaObject =
-          (schemaObject.properties && schemaObject.properties[propName] as SchemaObject) ||
+          (schemaObject.properties &&
+            (schemaObject.properties[propName] as SchemaObject)) ||
           DEFAULT_SCHEMA;
         return {
           ...schema,
@@ -71,8 +72,13 @@ const getAllPaths = async (
           return;
         }
 
+        if (!operationObject.responses?.["200"]?.content) {
+          return;
+        }
         var ref =
-          operationObject.responses?.["200"]?.content?.["*/*"]?.schema?.$ref;
+          operationObject.responses["200"].content[
+            Object.keys(operationObject.responses["200"].content)[0]
+          ].schema?.$ref;
         // if (!response) {
         //   return;
         // }
@@ -147,13 +153,15 @@ export const getSchemas = async (openApis: GenerateServiceProps[]) => {
       const schema: SchemaObject = components.schemas[p];
 
       // let childrenSchema = components.schemas[refName] as SchemaObject;
-      if(!schema?.title?.includes('«')){
+      if (!schema?.title?.includes("«")) {
         var rowKey: any = Object.keys(schema.properties || {}).filter(
           (it) =>
             it === "id" ||
-            (schema.properties![it] as SchemaObject).description?.includes("主键")
+            (schema.properties![it] as SchemaObject).description?.includes(
+              "主键"
+            )
         )[0];
-  
+
         var props = getProps(schema);
         allPaths[`${p}@${openApiConfig.projectName}`] = {
           props,
