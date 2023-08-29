@@ -1,5 +1,4 @@
 import * as vscode from "vscode";
-import * as copyPaste from "copy-paste";
 import * as path from "path";
 
 import * as fs from "fs-extra";

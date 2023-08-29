@@ -1,8 +1,8 @@
-import { SchemaObject } from "openapi3-ts/oas30";
+import { MediaTypeObject, ParameterObject, PathItemObject, ReferenceObject, SchemaObject } from "openapi3-ts/oas30";
 import getRefName from "./getRefName";
 
 const getType = (
-  schemaObject: SchemaObject | undefined,
+  schemaObject?:  SchemaObject | ReferenceObject,
   namespace: string = ""
 ): string => {
   if (schemaObject === undefined || schemaObject === null) {
@@ -11,7 +11,7 @@ const getType = (
   if (typeof schemaObject !== "object") {
     return schemaObject;
   }
-  if (schemaObject.$ref) {
+  if ((schemaObject as ReferenceObject).$ref) {
     return [namespace, getRefName(schemaObject)].filter((s) => s).join(".");
   }
 
@@ -35,7 +35,7 @@ const getType = (
 
   const stringEnum = ["string", "email", "password", "url", "byte", "binary"];
 
-  if (numberEnum.includes(schemaObject.format)) {
+  if (numberEnum.includes(schemaObject.format!)) {
     type = "number";
   }
 
@@ -60,9 +60,9 @@ const getType = (
   }
 
   if (type === "array") {
-    let { items } = schemaObject;
-    if (schemaObject.schema) {
-      items = schemaObject.schema.items;
+    let { items, schema } = schemaObject as any;
+    if (schema) {
+      items = (schema as SchemaObject).items;
     }
 
     if (Array.isArray(items)) {
@@ -71,7 +71,7 @@ const getType = (
         .toString();
       return `[${arrayItemType}]`;
     }
-    const arrayType = getType(items, namespace);
+    const arrayType = getType(items as SchemaObject, namespace);
     return arrayType.includes(" | ") ? `(${arrayType})[]` : `${arrayType}[]`;
   }
 
@@ -89,12 +89,12 @@ const getType = (
 
   if (schemaObject.oneOf && schemaObject.oneOf.length) {
     return schemaObject.oneOf
-      .map((item) => getType(item, namespace))
+      .map((item: SchemaObject) => getType(item, namespace))
       .join(" | ");
   }
   if (schemaObject.allOf && schemaObject.allOf.length) {
     return `(${schemaObject.allOf
-      .map((item) => getType(item, namespace))
+      .map((item: SchemaObject) => getType(item, namespace))
       .join(" & ")})`;
   }
   if (schemaObject.type === "object" || schemaObject.properties) {
@@ -114,7 +114,7 @@ const getType = (
          * 错误的继续保留字符串。
          * */
         return `'${key}'${required ? "" : "?"}: ${getType(
-          schemaObject.properties && schemaObject.properties[key],
+          schemaObject.properties && schemaObject.properties[key] as any,
           namespace
         )}; `;
       })

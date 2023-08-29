@@ -19,6 +19,7 @@ import * as pinyin from "tiny-pinyin";
 import { stripDot, writeFile } from "./util";
 import { GenerateServiceProps } from "./typing";
 import Log from "../log";
+import getType from "./getType";
 
 const BASE_DIRS = ["service", "services"];
 
@@ -65,9 +66,9 @@ const resolveTypeName = (typeName: string) => {
     typeName = typeName.substring(0, typeName.length - 1);
   }
 
-  const typeLastName = typeName.split("/").pop().split(".").pop();
+  const typeLastName = typeName.split("/").pop()!.split(".").pop();
 
-  const name = typeLastName
+  const name = typeLastName!
     .replace(/[-_ ](\w)/g, (_all, letter) => letter.toUpperCase())
     .replace(/[^\w^\s^\u4e00-\u9fa5]/gi, "");
 
@@ -97,127 +98,7 @@ function getRefName(refObject: any): string {
   return resolveTypeName(refPaths[refPaths.length - 1]) as string;
 }
 
-const getType = (
-  schemaObject: SchemaObject | undefined,
-  namespace: string = ""
-): string => {
-  if (schemaObject === undefined || schemaObject === null) {
-    return "any";
-  }
-  if (typeof schemaObject !== "object") {
-    return schemaObject;
-  }
-  if (schemaObject.$ref) {
-    return [namespace, getRefName(schemaObject)].filter((s) => s).join(".");
-  }
 
-  let { type } = schemaObject as any;
-
-  const numberEnum = [
-    "int64",
-    "integer",
-    "long",
-    "float",
-    "double",
-    "number",
-    "int",
-    "float",
-    "double",
-    "int32",
-    "int64",
-  ];
-
-  const dateEnum = ["Date", "date", "dateTime", "date-time", "datetime"];
-
-  const stringEnum = ["string", "email", "password", "url", "byte", "binary"];
-
-  if (numberEnum.includes(schemaObject.format)) {
-    type = "number";
-  }
-
-  if (schemaObject.enum) {
-    type = "enum";
-  }
-
-  if (numberEnum.includes(type)) {
-    return "number";
-  }
-
-  if (dateEnum.includes(type)) {
-    return "Date";
-  }
-
-  if (stringEnum.includes(type)) {
-    return "string";
-  }
-
-  if (type === "boolean") {
-    return "boolean";
-  }
-
-  if (type === "array") {
-    let { items } = schemaObject;
-    if (schemaObject.schema) {
-      items = schemaObject.schema.items;
-    }
-
-    if (Array.isArray(items)) {
-      const arrayItemType = (items as any)
-        .map((subType) => getType(subType.schema || subType, namespace))
-        .toString();
-      return `[${arrayItemType}]`;
-    }
-    const arrayType = getType(items, namespace);
-    return arrayType.includes(" | ") ? `(${arrayType})[]` : `${arrayType}[]`;
-  }
-
-  if (type === "enum") {
-    return Array.isArray(schemaObject.enum)
-      ? Array.from(
-          new Set(
-            schemaObject.enum.map((v) =>
-              typeof v === "string" ? `"${v.replace(/"/g, '"')}"` : getType(v)
-            )
-          )
-        ).join(" | ")
-      : "string";
-  }
-
-  if (schemaObject.oneOf && schemaObject.oneOf.length) {
-    return schemaObject.oneOf
-      .map((item) => getType(item, namespace))
-      .join(" | ");
-  }
-  if (schemaObject.allOf && schemaObject.allOf.length) {
-    return `(${schemaObject.allOf
-      .map((item) => getType(item, namespace))
-      .join(" & ")})`;
-  }
-  if (schemaObject.type === "object" || schemaObject.properties) {
-    if (!Object.keys(schemaObject.properties || {}).length) {
-      return "Record<string, any>";
-    }
-    return `{ ${Object.keys(schemaObject.properties)
-      .map((key) => {
-        const required =
-          "required" in (schemaObject.properties[key] || {})
-            ? ((schemaObject.properties[key] || {}) as any).required
-            : false;
-        /**
-         * 将类型属性变为字符串，兼容错误格式如：
-         * 3d_tile(数字开头)等错误命名，
-         * 在后面进行格式化的时候会将正确的字符串转换为正常形式，
-         * 错误的继续保留字符串。
-         * */
-        return `'${key}'${required ? "" : "?"}: ${getType(
-          schemaObject.properties && schemaObject.properties[key],
-          namespace
-        )}; `;
-      })
-      .join("")}}`;
-  }
-  return "any";
-};
 
 export const getGenInfo = (
   isDirExist: boolean,
@@ -987,8 +868,8 @@ class ServiceGenerator {
   }
 
   resolveArray(schemaObject: SchemaObject) {
-    if (schemaObject.items.$ref) {
-      const refObj = schemaObject.items.$ref.split("/");
+    if ((schemaObject as any).items.$ref) {
+      const refObj = (schemaObject as any).items.$ref.split("/");
       return {
         type: `${refObj[refObj.length - 1]}[]`,
       };
@@ -1004,7 +885,7 @@ class ServiceGenerator {
   }
 
   resolveEnumObject(schemaObject: SchemaObject) {
-    const enumArray = schemaObject.enum;
+    const enumArray: any = schemaObject.enum;
 
     let enumStr;
     switch (this.config.enumStyle) {
@@ -1014,7 +895,7 @@ class ServiceGenerator {
       case "string-literal":
         enumStr = Array.from(
           new Set(
-            enumArray.map((v) =>
+            enumArray.map((v: any) =>
               typeof v === "string" ? `"${v.replace(/"/g, '"')}"` : getType(v)
             )
           )
@@ -1031,7 +912,7 @@ class ServiceGenerator {
   }
 
   resolveAllOfObject(schemaObject: SchemaObject) {
-    const props = (schemaObject.allOf || []).map((item) =>
+    const props = (schemaObject.allOf || []).map((item: any) =>
       item.$ref
         ? [{ ...item, type: getType(item).split("/").pop() }]
         : this.getProps(item)
@@ -1077,7 +958,7 @@ class ServiceGenerator {
   }
   // 检测所有path重复区域（prefix）
   private getBasePrefix(paths: string[]) {
-    const arr = [];
+    const arr: any[] = [];
     paths
       .map((item) => item.split("/"))
       .forEach((pathItem) => {
@@ -1089,7 +970,7 @@ class ServiceGenerator {
         });
       });
 
-    const res = [];
+    const res: any[]  = [];
     arr
       .map((item) => Array.from(new Set(item)))
       .every((item) => {
