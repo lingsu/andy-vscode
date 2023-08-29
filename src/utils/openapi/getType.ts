@@ -15,6 +15,8 @@ const getType = (
     return [namespace, getRefName(schemaObject)].filter((s) => s).join(".");
   }
 
+  schemaObject = schemaObject as SchemaObject;
+
   let { type } = schemaObject as any;
 
   const numberEnum = [
@@ -79,7 +81,7 @@ const getType = (
     return Array.isArray(schemaObject.enum)
       ? Array.from(
           new Set(
-            schemaObject.enum.map((v) =>
+            (schemaObject as SchemaObject).enum.map((v) =>
               typeof v === "string" ? `"${v.replace(/"/g, '"')}"` : getType(v)
             )
           )
@@ -104,8 +106,8 @@ const getType = (
     return `{ ${Object.keys(schemaObject.properties)
       .map((key) => {
         const required =
-          "required" in (schemaObject.properties[key] || {})
-            ? ((schemaObject.properties[key] || {}) as any).required
+          "required" in ((schemaObject as any).properties[key] || {})
+            ? (((schemaObject as any).properties[key] || {}) as any).required
             : false;
         /**
          * 将类型属性变为字符串，兼容错误格式如：
@@ -114,7 +116,7 @@ const getType = (
          * 错误的继续保留字符串。
          * */
         return `'${key}'${required ? "" : "?"}: ${getType(
-          schemaObject.properties && schemaObject.properties[key] as any,
+          (schemaObject as any).properties && (schemaObject as any).properties[key] as any,
           namespace
         )}; `;
       })

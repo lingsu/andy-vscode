@@ -20,6 +20,7 @@ import { stripDot, writeFile } from "./util";
 import { GenerateServiceProps } from "./typing";
 import Log from "../log";
 import getType from "./getType";
+import resolveTypeName from "./resolveTypeName";
 
 const BASE_DIRS = ["service", "services"];
 
@@ -51,54 +52,6 @@ export const getPath = () => {
   const cwd = process.cwd();
   return existsSync(join(cwd, "src")) ? join(cwd, "src") : cwd;
 };
-
-// 类型声明过滤关键字
-const resolveTypeName = (typeName: string) => {
-  //   if (ReservedDict.check(typeName)) {
-  //     return `__openAPI__${typeName}`;
-  //   }
-  // console.log("resolveTypeName", typeName);
-
-  while (typeName.includes("__")) {
-    typeName = typeName.replace("__", "_");
-  }
-  if (typeName.endsWith("_")) {
-    typeName = typeName.substring(0, typeName.length - 1);
-  }
-
-  const typeLastName = typeName.split("/").pop()!.split(".").pop();
-
-  const name = typeLastName!
-    .replace(/[-_ ](\w)/g, (_all, letter) => letter.toUpperCase())
-    .replace(/[^\w^\s^\u4e00-\u9fa5]/gi, "");
-
-  // 当model名称是number开头的时候，ts会报错。这种场景一般发生在后端定义的名称是中文
-  if (name === "_" || /^\d+$/.test(name)) {
-    Log(
-      "⚠️  models不能以number开头，原因可能是Model定义名称为中文, 建议联系后台修改"
-    );
-    return `Pinyin_${name}`;
-  }
-  if (!/[\u3220-\uFA29]/.test(name) && !/^\d$/.test(name)) {
-    return name;
-  }
-  const noBlankName = name.replace(/ +/g, "");
-  return pinyin
-    .convertToPinyin(noBlankName, "-", true)
-    .split("-")
-    .map((it) => it[0].toUpperCase() + it.substring(1))
-    .join("");
-};
-
-function getRefName(refObject: any): string {
-  if (typeof refObject !== "object" || !refObject.$ref) {
-    return refObject;
-  }
-  const refPaths = refObject.$ref.split("/");
-  return resolveTypeName(refPaths[refPaths.length - 1]) as string;
-}
-
-
 
 export const getGenInfo = (
   isDirExist: boolean,
@@ -149,7 +102,10 @@ const DEFAULT_SCHEMA: SchemaObject = {
   properties: { id: { type: "number" } },
 };
 
-const DEFAULT_PATH_PARAM: ParameterObject = {
+const DEFAULT_PATH_PARAM: ParameterObject & {
+  isObject: boolean;
+  type: string;
+} = {
   in: "path",
   name: null,
   schema: {
@@ -349,10 +305,10 @@ class ServiceGenerator {
                 (_, str, str2) => `$\{${str || str2}}`
               );
               if (
-                newApi.extensions &&
-                newApi.extensions["x-antTech-description"]
+                (newApi as  any).extensions &&
+                (newApi as  any).extensions["x-antTech-description"]
               ) {
-                const { extensions } = newApi;
+                const { extensions } = newApi as  any;
                 const { apiName, antTechVersion, productCode, antTechApiName } =
                   extensions["x-antTech-description"];
                 formattedPath = antTechApiName || formattedPath;
@@ -362,7 +318,7 @@ class ServiceGenerator {
                   popProduct: productCode,
                   antTechVersion,
                 });
-                newApi.antTechVersion = antTechVersion;
+                (newApi as  any).antTechVersion = antTechVersion;
               }
 
               // 为 path 中的 params 添加 alias
@@ -387,8 +343,8 @@ class ServiceGenerator {
                   : params;
 
               // 处理 query 中的复杂对象
-              if (finalParams && finalParams.query) {
-                finalParams.query = finalParams.query.map((ele) => ({
+              if (finalParams && (finalParams as any).query) {
+                (finalParams as any).query = (finalParams as any).query.map((ele) => ({
                   ...ele,
                   isComplexType: ele.isObject,
                 }));
@@ -498,7 +454,7 @@ class ServiceGenerator {
     }
     let mediaType = Object.keys(reqContent)[0];
 
-    const schema: SchemaObject = reqContent[mediaType].schema || DEFAULT_SCHEMA;
+    const schema: SchemaObject = reqContent[mediaType].schema as SchemaObject || DEFAULT_SCHEMA;
 
     if (mediaType === "*/*") {
       mediaType = "";
@@ -513,14 +469,14 @@ class ServiceGenerator {
             schema.properties &&
             schema.properties[p] &&
             !["binary", "base64"].includes(
-              (schema.properties[p] as SchemaObject).format || ""
+              (schema.properties[p] as any).format || ""
             ) &&
             !(
               ["string[]", "array"].includes(
-                (schema.properties[p] as SchemaObject).type || ""
+                (schema.properties[p] as any).type || ""
               ) &&
               ["binary", "base64"].includes(
-                ((schema.properties[p] as SchemaObject).items as SchemaObject)
+                ((schema.properties[p] as any).items as SchemaObject)
                   .format || ""
               )
             )
@@ -608,8 +564,8 @@ class ServiceGenerator {
     let schema = (resContent[mediaType].schema ||
       DEFAULT_SCHEMA) as SchemaObject;
 
-    if (schema.$ref) {
-      const refPaths = schema.$ref.split("/");
+    if ((schema as any).$ref) {
+      const refPaths = (schema as any).$ref.split("/");
       const refName = refPaths[refPaths.length - 1];
       const childrenSchema = components.schemas[refName] as SchemaObject;
       if (
@@ -621,12 +577,12 @@ class ServiceGenerator {
           .map((field) => childrenSchema.properties[field])
           .filter(Boolean);
         schema =
-          dataFieldFiltered[0] ||
-          resContent[mediaType].schema ||
+          dataFieldFiltered[0] as SchemaObject ||
+          resContent[mediaType].schema as SchemaObject ||
           DEFAULT_SCHEMA;
       }
     }
-    
+
     if ("properties" in schema) {
       Object.keys(schema.properties).map((fieldName) => {
         // eslint-disable-next-line @typescript-eslint/dot-notation
@@ -706,7 +662,7 @@ class ServiceGenerator {
         }
 
         return Object.keys(defines).map((typeName) => {
-          const result = this.resolveObject(defines[typeName]);
+          const result = this.resolveObject(defines[typeName] as any);
 
           const getDefinesType = () => {
             if (result.type) {
@@ -827,7 +783,8 @@ class ServiceGenerator {
     return schemaObject.properties
       ? Object.keys(schemaObject.properties).map((propName) => {
           const schema: SchemaObject =
-            (schemaObject.properties && schemaObject.properties[propName]) ||
+            (schemaObject.properties &&
+              (schemaObject.properties[propName] as SchemaObject)) ||
             DEFAULT_SCHEMA;
           return {
             ...schema,
@@ -845,7 +802,7 @@ class ServiceGenerator {
 
   resolveObject(schemaObject: SchemaObject) {
     // 引用类型
-    if (schemaObject.$ref) {
+    if ((schemaObject as any).$ref) {
       return this.resolveRefObject(schemaObject);
     }
     // 枚举类型
@@ -970,7 +927,7 @@ class ServiceGenerator {
         });
       });
 
-    const res: any[]  = [];
+    const res: any[] = [];
     arr
       .map((item) => Array.from(new Set(item)))
       .every((item) => {

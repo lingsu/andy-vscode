@@ -19,7 +19,7 @@ const getProps = (schemaObject: SchemaObject) => {
   return schemaObject.properties
     ? Object.keys(schemaObject.properties).map((propName) => {
         const schema: SchemaObject =
-          (schemaObject.properties && schemaObject.properties[propName]) ||
+          (schemaObject.properties && schemaObject.properties[propName] as SchemaObject) ||
           DEFAULT_SCHEMA;
         return {
           ...schema,
