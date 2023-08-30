@@ -3,5 +3,15 @@ const columns<%=openApi.schema.title %>: ProColumns<<%=(config.namespace ? confi
     {
       title: "<%=c.description %>",
       dataIndex: "<%=c.name %>",
+        <% if (c.type == 'boolean') { %>
+          valueEnum: new Map([
+            [true, '是'],
+            [false, '否'],
+          ]),
+        <% } %>
+        <% if (c.format == 'date-time') { %>
+          valueType: 'dateTimeRange',
+        <% } %>
+
     },<%});%>
     ];

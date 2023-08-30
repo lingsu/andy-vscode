@@ -13,6 +13,16 @@ const columns: ProColumns<<%=(config.namespace ? config.namespace + ".": "") %><
     {
       title: "<%=c.description %>",
       dataIndex: "<%=c.name %>",
+      <% if (c.type == 'boolean') { %>
+        valueEnum: new Map([
+          [true, '是'],
+          [false, '否'],
+        ]),
+      <% } %>
+      <% if (c.format == 'date-time') { %>
+        valueType: 'dateTimeRange',
+      <% } %>
+      
     },
     <%});%>
    //{

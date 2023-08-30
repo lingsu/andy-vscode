@@ -6,7 +6,16 @@ export default ({data}: {data:<%=(config.namespace ? config.namespace + ".": "")
     <ProDescriptions column={3}>
       <% openApi.props.forEach((c, i) => {
         %>
-        <ProDescriptions.Item label="<%=c.description %>">
+        <ProDescriptions.Item label="<%=c.description %>"  
+          <% if (c.type == 'boolean') { %>
+            valueEnum={
+              new Map([
+                [true, "是"],
+                [false, "否"],
+              ])
+            }
+          <% } %>
+        >
           {data.<%=c.name %>}
         </ProDescriptions.Item>
         <%});%>

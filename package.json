@@ -46,6 +46,10 @@
 			{
 				"command": "andy-tool.openapiColumnsFromSchemas",
 				"title": "OpenApi3 Schemas 生成 Columns 列定义"
+			},
+			{
+				"command": "andy-tool.openapiProFormFromSchemas",
+				"title": "OpenApi3 Schemas 生成 ProForm"
 			}
 		],
 		"submenus": [
@@ -93,6 +97,10 @@
 				},
 				{
 					"command": "andy-tool.openapiDetailFromSchemas",
+					"group": "andy@1"
+				},
+				{
+					"command": "andy-tool.openapiProFormFromSchemas",
 					"group": "andy@1"
 				}
 			]

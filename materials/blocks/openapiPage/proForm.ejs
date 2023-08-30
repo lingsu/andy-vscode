@@ -1,0 +1,30 @@
+import { ProForm,
+  ProFormProps,
+  ProFormDateRangePicker,
+  ProFormRadio,
+  ProFormSelect,
+  ProFormText,
+ } from "@ant-design/pro-components";
+
+
+export default (props: ProFormProps<<%=(config.namespace ? config.namespace + ".": "") %><%=openApi.schema.title %>>) => {
+  return (
+    <ProForm {...props}>
+      <% openApi.props.forEach((c, i) => {
+        %>
+
+        <% if (c.type == 'string') { %>
+          <ProFormText 
+          label="<%=c.description %>"
+          name="<%=c.name %>"
+            <% if (c.required) { %>
+              rules={[{ required: true, message: '这是必填项' }]}
+            <% } %>
+           />
+        <% } %>
+
+
+        <%});%>
+    </ProForm>
+  );
+};

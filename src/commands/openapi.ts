@@ -331,4 +331,57 @@ export default (context: vscode.ExtensionContext) => {
     }
   );
   context.subscriptions.push(openapiColumnsFromSchemas);
+
+
+
+  let openapiProFormFromSchemas = vscode.commands.registerCommand(
+    "andy-tool.openapiProFormFromSchemas",
+    async (args) => {
+      console.log("args", args);
+
+      var config = getConfig();
+      var openApis = config.openApis || [];
+      if (openApis.length < 1) {
+        vscode.window.showWarningMessage("未配置OpenApi", {
+          modal: true,
+        });
+        return;
+      }
+
+      var allPaths = await getSchemas(openApis);
+
+      var pathName = await vscode.window.showQuickPick(Object.keys(allPaths), {
+        placeHolder: "请选择接口",
+      });
+      if (!pathName) {
+        return;
+      }
+      getOutputChannel().show();
+
+      let selectedPath = allPaths[pathName];
+      Log(JSON.stringify(selectedPath));
+
+      // if (!selectedPath.rowKey) {
+      //   Log(`${selectedPath.schema.title}未设置rowKey`);
+      // }
+
+      const fileName = `${selectedPath.schema.title}Form.tsx`;
+      await genCodeByFile(
+        {
+          openApi: selectedPath,
+          config: selectedPath.config,
+        },
+        path.join(
+          context.extensionPath,
+          "materials",
+          "blocks",
+          "openapiPage",
+          "proForm.ejs"
+        ),
+        path.join(formatPath(args?.path || componentsPath), fileName)
+      );
+      Log(`✅ 成功生成 ${fileName} 文件`);
+    }
+  );
+  context.subscriptions.push(openapiProFormFromSchemas);
 };
