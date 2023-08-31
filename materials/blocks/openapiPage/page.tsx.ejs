@@ -3,7 +3,7 @@ import {
   ProTable,
 } from "@ant-design/pro-components";
 //import { Link } from "react-router-dom";
-import useProTable from '../hooks/useProTable';
+import { useProTable } from "@q25a25q/blade-v2";
 //import { css } from "@emotion/css";
 
 const columns: ProColumns<<%=(config.namespace ? config.namespace + ".": "") %><%=openApi.schema.title %>>[] = [
