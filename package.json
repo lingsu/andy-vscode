@@ -2,7 +2,7 @@
 	"name": "andy-tool",
 	"displayName": "andy tool",
 	"description": "开发工具集",
-	"version": "0.0.7",
+	"version": "0.0.8",
 	"publisher": "andy2023",
 	"repository": "https://github.com/lingsu/andy-vscode",
 	"engines": {
