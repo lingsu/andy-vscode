@@ -12,7 +12,7 @@ const getSchema = async (schemaPath: string, projectName: string) => {
     );
     return JSON.parse(
       getFileContent(
-        path.join(tempWorkPath, "openapi", projectName + "OpenApi.json"),
+        path.join(tempWorkPath, "openapi", projectName + "Swagger.json"),
         true
       ) || "{}"
     );

@@ -7,32 +7,37 @@ import { tempWorkPath } from "../vscodeEnv";
 import converterSwaggerToOpenApi from "./converterSwaggerToOpenApi";
 import getSchema from "./getSchema";
 
-
 const getOpenAPIConfig = async (
-    schemaPath: string,
-    projectName: string,
-    sync= false
-  ) => {
-  
-    if (
-      sync === false &&
-      fs.existsSync(path.join(tempWorkPath, "openapi", projectName + "OpenApi.json"))
-    ) {
-      Log('使用缓存openAPI配置')
-      return JSON.parse(
-        getFileContent(
-          path.join(tempWorkPath, "openapi", projectName + "OpenApi.json"),
-          true
-        ) || "{}"
-      );
-    }
-    const schema = await getSchema(schemaPath, projectName);
-    if (!schema) {
-      return null;
-    }
-    const openAPI = await converterSwaggerToOpenApi(schema);
-  
-    return openAPI;
-  };
+  schemaPath: string,
+  projectName: string,
+  sync = false
+) => {
+  if (
+    sync === false &&
+    fs.existsSync(
+      path.join(tempWorkPath, "openapi", projectName + "OpenApi.json")
+    )
+  ) {
+    Log("使用缓存openAPI配置");
+    return JSON.parse(
+      getFileContent(
+        path.join(tempWorkPath, "openapi", projectName + "OpenApi.json"),
+        true
+      ) || "{}"
+    );
+  }
+  const schema = await getSchema(schemaPath, projectName);
+  if (!schema) {
+    return null;
+  }
+  const openAPI = await converterSwaggerToOpenApi(schema);
 
-  export default getOpenAPIConfig;
+  await fs.writeJSON(
+    path.join(tempWorkPath, "openapi", projectName + "OpenApi.json"),
+    openAPI
+  );
+
+  return openAPI;
+};
+
+export default getOpenAPIConfig;
