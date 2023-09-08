@@ -12,7 +12,7 @@ const defaultConfig: Config = {
       // requestImportStatement,
       enumStyle: "string-literal",
       projectName: "blade",
-      serversPath: "./src/service",
+      serversPath: "./src/services",
       // templatesFolder: path.join(materialsPath, "openapi")
       // templatesFolder: path.join(context.extensionPath,"materials","blocks", "openapi"),
       requestImportStatement: `import request from "../../utils/request";`,
