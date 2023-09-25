@@ -4,6 +4,7 @@ import { ProForm,
   ProFormRadio,
   ProFormSelect,
   ProFormText,
+  ProFormDigit,
  } from "@ant-design/pro-components";
 
 
@@ -13,7 +14,16 @@ export default (props: ProFormProps<<%=(config.namespace ? config.namespace + ".
       <% openApi.props.forEach((c, i) => {
         %>
 
-        <% if (c.type == 'string') { %>
+
+        <% if (c.type == 'number') { %>
+          <ProFormDigit 
+          label="<%=c.description %>"
+          name="<%=c.name %>"
+            <% if (c.required) { %>
+              rules={[{ required: true, message: '这是必填项' }]}
+            <% } %>
+           />
+        <% } else { %>
           <ProFormText 
           label="<%=c.description %>"
           name="<%=c.name %>"
@@ -22,6 +32,10 @@ export default (props: ProFormProps<<%=(config.namespace ? config.namespace + ".
             <% } %>
            />
         <% } %>
+
+        
+      
+
 
 
         <%});%>
